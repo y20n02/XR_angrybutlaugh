@@ -1,14 +1,15 @@
-# Context — 2d-phaser-basic
+# Context — 시간 내에 화내기
 
 ## Project Overview
 
-Phaser 3 scaffold mounted inside a React shell. `GameComponent` boots a `Phaser.Game` into a DOM container and `MainScene` sets up a sky-blue viewport, an Arcade Physics world, and a single static green ground rectangle. The game uses full-window sizing with `Phaser.Scale.RESIZE`, and `Game.ts` patches Phaser's `setDisplaySize` / `setScale` / Tween scale behavior so that sprite scaling stays consistent with the declared display size.
+Korean retro visual-novel typing game mounted in a React shell. Gameplay and UI live in `src/game/GameScreen.tsx` so Korean IME composition, accessible keyboard inputs, menus, and CSS-drawn mini-games are native DOM interactions. The old Phaser scaffold remains in `src/game/Game.ts` and `src/game/scenes/MainScene.ts`, but `App.tsx` no longer mounts it. Character art is listed in `src/assets.json`; player-visible copy and all nine scenario/difficulty scripts are in `src/locales/ko.json`.
 
 ## Tech Stack
 
 _Exact versions are in `package.json`._
 
-- **Game engine**: `phaser` (Arcade Physics)
+- **Game runtime**: React DOM with requestAnimationFrame timing
+- **Legacy scaffold**: Phaser 3 remains installed but is not mounted by the game
 - **Shell**: React, `react-dom`
 - **Build / Lang**: Vite, TypeScript
 - **Styling**: Tailwind CSS
@@ -17,8 +18,10 @@ _Exact versions are in `package.json`._
 
 ## Critical Memory
 
-- React owns only the mount point; all gameplay lives in Phaser under `src/game/`. Do not render game objects from React.
-- `GameComponent` creates the `Phaser.Game` once via a `useRef` guard and calls `destroy(true)` on unmount — preserve this lifecycle to avoid duplicate game instances under React StrictMode.
-- `Game.ts` contains a `CRITICAL` block that overrides `Sprite.prototype.setDisplaySize` / `setScale`, `Image.prototype.setDisplaySize` / `setScale`, and `TweenManager.prototype.add`. It is marked LLM-modification-prohibited; sprite sizing/tweens depend on it.
-- Assets are declared in `src/assets.json` (`sprites` map) and currently empty — load textures in `MainScene.preload()` by reading this manifest.
-- Canvas uses `Phaser.Scale.RESIZE`; read `this.cameras.main.width/height` or `this.sys.game.canvas.width/height` instead of hard-coding dimensions.
+- Gameplay state, menus, character portraits, typing, mini-games, outcomes, and collections are React-owned in `GameScreen.tsx`.
+- The active time loop calls the platform-injected `DebugPanel.frame()` for pause/slow-motion integration. Keep gameplay tunables in the single schema at the top of `GameScreen.tsx`.
+- Player-visible strings and scenario scripts belong in `src/locales/ko.json`; generated resource URLs belong in `src/assets.json`.
+- `GameComponent` and the Phaser scaffold remain as legacy code but are not part of the active app route.
+- Portrait PNGs are explicitly sized by the portrait CSS so source image dimensions never control layout.
+- Browser progress is stored in localStorage under `time-to-get-mad-save-v1`; unlock tracks are independent for each scenario.
+- The central game frame targets 16:9 and scales to the browser viewport; mini-game movement and timers are driven by the same requestAnimationFrame loop.

@@ -1,4 +1,4 @@
-# Structure — 2d-phaser-basic
+# Structure — 시간 내에 화내기
 
 ## `src/main.tsx`
 
@@ -6,23 +6,35 @@ Entry point. Mounts `<App />` into `#root` with React 18 `createRoot` under `Str
 
 ## `src/App.tsx`
 
-Root component. Wraps `<GameComponent />` in a full-viewport `.app` container.
+Root component. Wraps `<GameScreen />` in a full-viewport `.app` container.
 
 ## `src/App.css`, `src/index.css`
 
-Component/global styles. `App.css` pins `html`/`body`/`.app` to `100vw` / `100vh` with `overflow: hidden`. `index.css` holds the Tailwind directives.
+Component/global styles. `App.css` pins the app to the viewport. `index.css` holds global typography and reset styles; `src/game/game.css` contains the retro 16:9 game UI and responsive styling.
 
 ## `src/assets.json`
 
-Asset manifest (`{ "sprites": {} }`). Consumed by `MainScene` — populate entries here and load them in `preload()`.
+Asset manifest for the generated scenario-specific anime portraits used by the React game UI.
+
+## `src/locales/ko.json`
+
+All player-visible Korean copy plus scenario metadata, character names, and unique easy/normal/expert rounds and Fever Time phrases for the office, team-project, and part-time-work scenarios.
+
+## `src/game/GameScreen.tsx`
+
+Active game implementation. Owns title/help/scenario/difficulty menus, IME-safe text entry, timing and accuracy, rage/social/mental meters, reaction states, rage-control and stare-down mini-games, three actually falling Fever Time sentences, victory and loss routes, blanket-kick practice, independent local unlock progression, certificate collection, generated character portraits, optional synthesized sound, and the DebugPanel tuning schema. The animation loop routes delta time through `DebugPanel.frame()`.
+
+## `src/game/game.css`
+
+CRT scanlines, pixel borders, scene backdrops, portrait sizing and CSS fallback, dialogue animation, falling sentence lane and fail line, ending scenes, and responsive styling. Tunable control geometry uses schema-backed CSS custom properties with matching default fallbacks.
 
 ## `src/components/GameComponent.tsx`
 
-React host for Phaser. Renders a `#phaser-game` div (100% × 100vh), calls `createGame(containerId)` in a `useEffect` guarded by a ref, and tears the game down with `game.destroy(true)` on unmount.
+Legacy React host for Phaser retained for possible future reuse. The current app mounts `GameScreen` directly instead.
 
 ## `src/game/Game.ts`
 
-Exports `createGame(parent)`. Builds the `Phaser.Types.Core.GameConfig`:
+Legacy export `createGame(parent)`. Builds the `Phaser.Types.Core.GameConfig`:
 
 - `type: Phaser.AUTO`, full-window `width`/`height`, `parent` set to the React container id
 - `physics.default: 'arcade'` with `gravity.y: 2000` and `debug: false`

@@ -1,3 +1,20 @@
 {
-  "sprites": {}
+  "sprites": {},
+  "characters": {
+    "office": {
+      "url": "https://agent8-games.verse8.io/0x985966fb2f9fcef8d1f859ba003d12a1e305873b/mcp-uploads/static-assets/character-1791966121511.png",
+      "description": "Retro anime bust portrait of the office senior colleague, with a charcoal suit and knowing smile.",
+      "metadata": { "style": "anime", "transparent": true, "scenario": "office" }
+    },
+    "team": {
+      "url": "https://agent8-games.verse8.io/0x985966fb2f9fcef8d1f859ba003d12a1e305873b/mcp-uploads/static-assets/character-1791966103090.png",
+      "description": "Retro anime bust portrait of the assertive project teammate in a violet cardigan.",
+      "metadata": { "style": "anime", "transparent": true, "scenario": "team" }
+    },
+    "shop": {
+      "url": "https://agent8-games.verse8.io/0x985966fb2f9fcef8d1f859ba003d12a1e305873b/mcp-uploads/static-assets/character-1791966105461.png",
+      "description": "Retro anime bust portrait of an impatient customer wearing a dark olive jacket.",
+      "metadata": { "style": "anime", "transparent": true, "scenario": "shop" }
+    }
+  }
 }

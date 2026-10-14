@@ -1,20 +1,25 @@
-# Status — 2d-phaser-basic
+# Status — 시간 내에 화내기
 
 ## Implemented
 
-- React 18 shell (`main.tsx` → `App.tsx` → `GameComponent`) mounting a full-viewport Phaser canvas
-- `Phaser.Game` lifecycle with `StrictMode`-safe single-instance guard and `destroy(true)` cleanup
-- `createGame` config: Arcade Physics (`gravity.y: 2000`), `Phaser.Scale.RESIZE`, `autoCenter: CENTER_BOTH`, single `MainScene`
-- Global sprite/tween scaling patch in `Game.ts` (`setDisplaySize` / `setScale` / `TweenManager.add` override, keyed to `baseDisplayWidth`/`baseDisplayHeight`)
-- `MainScene`: sky-blue background, physics world bounds matching canvas, static green ground rectangle with Arcade body
-- `assets.json` manifest scaffold consumed by `MainScene`
-- Embed-host size reporting via `postMessage` in `index.html`
+- Korean retro visual-novel title, help, scenario selection, per-scenario difficulty unlocks, conversation, results, loss, collection, and retry routes
+- Three distinct CSS scene backdrops and generated 2D anime character portraits for office, team project, and part-time work
+- Nine unique scripts (three difficulties per scenario), each with three Fever Time phrases
+- Korean IME-aware controlled input, live correct/error/accuracy highlighting, Backspace correction, Enter submission, per-difficulty timer and typo tolerance, speed/accuracy scoring, minimum send-time rule, timeout/typo/profanity reactions
+- Anger, social-life, and opponent-mental gauges; rage-control timing mini-game; five-second stare-down mash mini-game; three sequentially falling Fever Time phrases with moving positions and fail-line collision
+- Happy ending and loss-to-bedroom transition into timed blanket-kick practice; scenario/difficulty progression, certificates, and all-certificate master award
+- Browser localStorage persistence for independent scenario unlocks and certificates
+- Optional synthesized retro sound effects, typewriter dialogue reveal, CRT scanlines, pixel-style panels, and CSS-based portrait fallback
+- Live DebugPanel schema for gameplay, mini-game, effect volume, and UI geometry tuning
+- Player-facing copy and scenario dialogue externalized to the Korean locale file; asset manifest documents portrait resources
 
-## Installed but not wired
+## Verification
 
-- `@agent8/gameserver` — no networking / session code
-- `lucide-react` — no imports
-- `tailwindcss` — directives loaded via `index.css`, no utility usage in markup
-- `MainScene.cursors` field — declared but never initialized; no input handling
-- `MainScene.preload()` / `update()` — empty bodies
-- `assets.json.sprites` — empty map, no textures loaded
+- `bun run build` succeeds.
+- `bunx tsc --noEmit -p tsconfig.app.json` succeeds.
+- `bun run lint` is currently unavailable because this template has no ESLint v9 flat-config file.
+
+## Legacy scaffold
+
+- Phaser `GameComponent`, `Game.ts`, and `MainScene.ts` remain in the project but are no longer mounted by `App.tsx`.
+- The active game does not use GameServer, online sessions, or network features.
