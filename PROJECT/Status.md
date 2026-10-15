@@ -1,4 +1,4 @@
-# Status — 시간 내에 화내기
+# Status — 웃으며 화내기
 
 ## Implemented
 

@@ -1,4 +1,4 @@
-# Structure — 시간 내에 화내기
+# Structure — 웃으며 화내기
 
 ## `src/main.tsx`
 

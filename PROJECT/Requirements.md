@@ -1,4 +1,4 @@
-# Requirements — 시간 내에 화내기
+# Requirements — 웃으며 화내기
 
 ## Coding Patterns
 

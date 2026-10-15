@@ -1,4 +1,4 @@
-# Context — 시간 내에 화내기
+# Context — 웃으며 화내기
 
 ## Project Overview
 
