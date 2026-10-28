@@ -1,4 +1,4 @@
-# Requirements — 웃으며 화내기
+# Requirements — 2D_angrybutlaugh
 
 ## Coding Patterns
 

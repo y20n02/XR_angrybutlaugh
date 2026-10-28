@@ -1,4 +1,4 @@
-# Context — 웃으며 화내기
+# Context — 2D_angrybutlaugh
 
 ## Project Overview
 

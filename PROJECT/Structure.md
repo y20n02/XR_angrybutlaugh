@@ -1,4 +1,4 @@
-# Structure — 웃으며 화내기
+# Structure — 2D_angrybutlaugh
 
 ## `src/main.tsx`
 

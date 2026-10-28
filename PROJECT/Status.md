@@ -1,4 +1,4 @@
-# Status — 웃으며 화내기
+# Status — 2D_angrybutlaugh
 
 ## Implemented
 
