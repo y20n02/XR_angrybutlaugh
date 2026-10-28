@@ -22,3 +22,10 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Model credentials are server-only.
+.env
+.env.*
+!.env.example
+test-results/
+playwright-report/

@@ -22,4 +22,12 @@
 ## Legacy scaffold
 
 - Phaser `GameComponent`, `Game.ts`, and `MainScene.ts` remain in the project but are no longer mounted by `App.tsx`.
-- The active game does not use GameServer, online sessions, or network features.
+- The active game does not use GameServer or online sessions. Optional semantic evaluation uses a separate trusted HTTP server.
+
+## Automatic Evaluation Update
+
+- Script/semantic routing, normalized insertion/deletion/transposition tolerance, and fixed speech-slip reactions are implemented.
+- Single input and existing scene/minigame layout remain; original replies use neutral live feedback until evaluated.
+- IME and repeated-submission guards, request cancellation/deadlines, no-penalty service failures, frame-based pace/rhythm, and outcome gating are implemented.
+- `npm test`, `npm run typecheck`, `npm run build`, and `npm run test:browser` cover rules, server contracts, and browser flows. See `docs/answer-evaluation.md`.
+- Real model credentials and a deployed evaluator are not included. Live semantic quality and production Verse8 integration still require environment configuration and verification.

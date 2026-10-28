@@ -7,6 +7,7 @@ export default defineConfig({
   optimizeDeps: {
     exclude: ["lucide-react"],
   },
+  server: { proxy: { "/api/evaluate": "http://127.0.0.1:8787" } },
   base: "./",
   build: {
     outDir: "dist",

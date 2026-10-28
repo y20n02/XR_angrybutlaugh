@@ -13,6 +13,7 @@ _Exact versions are in `package.json`._
 - **Shell**: React, `react-dom`
 - **Build / Lang**: Vite, TypeScript
 - **Styling**: Tailwind CSS
+- **Optional semantic evaluator**: separate Node HTTP server in `server/`; public endpoint configured by `VITE_EVALUATION_URL`, model secrets server-only
 - **Multiplayer (unwired)**: `@agent8/gameserver`
 - **Icons (unwired)**: `lucide-react`
 
@@ -25,3 +26,11 @@ _Exact versions are in `package.json`._
 - Portrait PNGs are explicitly sized by the portrait CSS so source image dimensions never control layout.
 - Browser progress is stored in localStorage under `time-to-get-mad-save-v1`; unlock tracks are independent for each scenario.
 - The central game frame targets 16:9 and scales to the browser viewport; mini-game movement and timers are driven by the same requestAnimationFrame loop.
+
+## Automatic Answer Evaluation
+
+- `src/game/evaluation.ts` owns normalized edit-distance routing, authored typo patterns, pace adjustment, semantic request validation, and clear requirements.
+- Original replies use `/api/evaluate` (or a configured public HTTPS endpoint); `server/` owns model credentials and looks up scenario context from the authored locale.
+- Evaluation waits pause the typing clock; failures preserve input/gauges for retry. Escape aborts pending evaluation. Frame time also measures typing pace and minimum think time.
+- A clear requires at least half the rounds accepted and opponent mental at zero, in addition to avoiding existing loss conditions.
+- `docs/answer-evaluation.md` explains the separate server deployment requirement and the mock-versus-live verification boundary.

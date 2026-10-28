@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Text from "../locales/ko.json";
 import Assets from "../assets.json";
 import "./game.css";
+import { canClear, editDistance, evaluateSemantic, hasProfanity, MAX_ANSWER_LENGTH, normalize, paceMultiplier, scriptEvaluation } from "./evaluation";
+import type { Evaluation } from "./evaluation";
 
 /* TUNABLES CONTRACT — read before editing this file.
    1. Gameplay and UI constants live in DebugPanel.define below; read T.* where used.
@@ -16,6 +18,13 @@ const T = DebugPanel.define({
     normalTime: { value: 20, min: 10, max: 35, step: 1, label: "숙련 문장 제한 시간 (초)" },
     expertTime: { value: 18, min: 10, max: 30, step: 1, label: "전문가 문장 제한 시간 (초)" },
     angerThreshold: { value: 70, min: 40, max: 90, step: 1, label: "분노 조절 이벤트 시작 수치" },
+  },
+  evaluation: {
+    _label: "자동 답변 판정",
+    nearThreshold: { value: 0.75, min: 0.6, max: 0.95, step: 0.01, label: "대본 유사 답변 분기 기준" },
+    timeoutMs: { value: 8000, min: 2000, max: 15000, step: 500, label: "의미 판정 대기 제한 (ms)" },
+    minCpm: { value: 60, min: 20, max: 150, step: 10, label: "차분한 입력 속도 하한" },
+    maxCpm: { value: 900, min: 300, max: 1500, step: 50, label: "차분한 입력 속도 상한" },
   },
   minigame: {
     _label: "미니게임",
@@ -94,7 +103,7 @@ const T = DebugPanel.define({
   },
 });
 
-const INTERNAL = { storageKey: "time-to-get-mad-save-v1", secondsPerMinute: 60, millisecondsPerSecond: 1000, typingUnit: 5, frameClampSeconds: 0.05, renderThrottleMs: 80, percentMax: 100, feverStartY: -14 };
+const INTERNAL = { storageKey: "time-to-get-mad-save-v1", secondsPerMinute: 60, millisecondsPerSecond: 1000, frameClampSeconds: 0.05, renderThrottleMs: 80, percentMax: 100, feverStartY: -14 };
 const SCENARIO_IDS = ["office", "team", "shop"] as const;
 type ScenarioId = (typeof SCENARIO_IDS)[number];
 type Screen = "title" | "howto" | "scenarios" | "difficulty" | "play" | "ending" | "collection";
@@ -109,6 +118,8 @@ type Session = {
   mode: Mode;
   roundIndex: number;
   completed: number;
+  successes: number;
+  inputElapsed: number;
   input: string;
   remaining: number;
   anger: number;
@@ -136,12 +147,11 @@ type Session = {
   matchingChars: number;
   targetChars: number;
   typingMilliseconds: number;
-  inputStarted: number;
   blanketIndex: number;
 };
 
 const STARTING_SAVE: SaveData = { unlocked: { office: 0, team: 0, shop: 0 }, certificates: {} };
-const PROFANITY = ["씨발", "시발", "병신", "개새끼", "좆", "꺼져"];
+
 
 function loadSave(): SaveData {
   try {
@@ -161,12 +171,6 @@ function getSentence(scenario: ScenarioId, level: number, round: number) {
   return (Text.scenarios as any)[scenario].levels[level].rounds[round];
 }
 
-function countErrors(expected: string, actual: string) {
-  const a = Array.from(expected);
-  const b = Array.from(actual);
-  return Math.max(a.length, b.length) - a.reduce((count, char, index) => count + (char === b[index] ? 1 : 0), 0);
-}
-
 function allowedErrors(level: number) {
   return [T.advanced.easyTypos, T.advanced.normalTypos, T.advanced.expertTypos][level];
 }
@@ -176,7 +180,9 @@ function limitFor(level: number) {
 }
 
 function levelRoundCount(level: number) {
-  return [T.advanced.easyRounds, T.advanced.normalRounds, T.advanced.expertRounds][level];
+  // Debug tuning cannot index beyond the authored script.
+  const available = Math.min(...SCENARIO_IDS.map(id => (Text.scenarios as any)[id].levels[level].rounds.length));
+  return Math.min(available, [T.advanced.easyRounds, T.advanced.normalRounds, T.advanced.expertRounds][level]);
 }
 
 function titleCaseRank(session: Session) {
@@ -216,7 +222,8 @@ function GameScreen() {
   const [ending, setEnding] = useState<Ending>("over");
   const [selectedScenario, setSelectedScenario] = useState<ScenarioId>("office");
   const [save, setSave] = useState<SaveData>(loadSave);
-  const [session, setSession] = useState<Session | null>(null);
+  const [session, setSessionState] = useState<Session | null>(null);
+  const [evaluationPending, setEvaluationPending] = useState(false);
   const [typedTarget, setTypedTarget] = useState("");
   const [composing, setComposing] = useState(false);
   const [soundOn, setSoundOn] = useState(true);
@@ -229,7 +236,20 @@ function GameScreen() {
   const endingRef = useRef<Ending>(ending);
   const audioRef = useRef<AudioContext | null>(null);
   const playToneRef = useRef<(frequency: number, duration?: number) => void>(() => {});
-  sessionRef.current = session;
+  const pendingRef = useRef<AbortController | null>(null);
+  const composingRef = useRef(false);
+  const compositionEndedRef = useRef(-Infinity);
+  const commitsRef = useRef<number[]>([]);
+  // Update the event snapshot immediately, including between two Enter/click events.
+  const setSession = useCallback((update: Session | null | ((old: Session | null) => Session | null)) => {
+    const next = typeof update === "function" ? update(sessionRef.current) : update;
+    sessionRef.current = next;
+    setSessionState(next);
+  }, []);
+  const cancelEvaluation = () => {
+    pendingRef.current?.abort(); pendingRef.current = null; setEvaluationPending(false);
+  };
+  useEffect(() => () => pendingRef.current?.abort(), []);
   screenRef.current = screen;
   endingRef.current = ending;
 
@@ -247,13 +267,13 @@ function GameScreen() {
       const dt = DebugPanel.frame(raw);
       const current = sessionRef.current;
       if (dt && current && screenRef.current === "play") {
-        if (current.mode === "typing") {
+        if (current.mode === "typing" && !pendingRef.current) {
           accumulatedDt += dt;
           if (now - lastPaint > INTERNAL.renderThrottleMs) {
             lastPaint = now;
             const step = accumulatedDt;
             accumulatedDt = 0;
-            setSession((old) => old?.mode === "typing" ? { ...old, remaining: Math.max(0, old.remaining - step) } : old);
+            setSession((old) => old?.mode === "typing" ? { ...old, remaining: Math.max(0, old.remaining - step), inputElapsed: old.inputElapsed + step * 1000 } : old);
           }
         } else if (current.mode === "calm") {
           accumulatedDt = 0;
@@ -321,15 +341,16 @@ function GameScreen() {
   const feverDifficulty = session ? session.level === 0 ? T.advanced.feverEasyScale : session.level === 1 ? 1 : T.advanced.feverHardScale : 1;
 
   const startScenario = (id: ScenarioId, level: number) => {
+    cancelEvaluation();
+    commitsRef.current = []; composingRef.current = false; compositionEndedRef.current = -Infinity;
     setSelectedScenario(id);
-    const now = performance.now();
     setSession({
-      scenario: id, level, mode: "typing", roundIndex: 0, completed: 0, input: "", remaining: limitFor(level),
+      scenario: id, level, mode: "typing", roundIndex: 0, completed: 0, successes: 0, inputElapsed: 0, input: "", remaining: limitFor(level),
       anger: 0, social: T.advanced.socialMax, mental: T.advanced.mentalMax, curses: 0, feedback: "", face: "NORMAL", reactionKind: "round",
       calmConsumed: false, stareDone: false, feverDone: false, calmPosition: 0, calmDirection: 1,
       stareRemaining: T.minigame.stareSeconds, stareGauge: 0, feverIndex: 0, feverY: -14,
       feverHits: 0, combo: 0, feverWon: false, stareWon: false, misses: [], typedChars: 0, matchingChars: 0,
-      targetChars: 0, typingMilliseconds: 0, inputStarted: now, blanketIndex: 0,
+      targetChars: 0, typingMilliseconds: 0, blanketIndex: 0,
     });
     setTypedTarget("");
     setComposing(false);
@@ -340,6 +361,7 @@ function GameScreen() {
 
   const clearResult = (next: Session) => {
     if (next.anger >= T.advanced.angerMax || next.social <= 0 || next.curses >= T.advanced.curseLimit) {
+      composingRef.current = false; setComposing(false);
       setSession({ ...next, mode: "reaction" });
       setEnding("over");
       setScreen("ending");
@@ -352,6 +374,7 @@ function GameScreen() {
   const startReaction = (next: Session, message: string, face: Face, kind: "round" | "event") => {
     setSession({ ...next, mode: "reaction", feedback: message, face, reactionKind: kind, input: "" });
     setTypedTarget("");
+    commitsRef.current = []; composingRef.current = false; setComposing(false);
   };
 
   const beginFever = (next: Session) => {
@@ -393,34 +416,41 @@ function GameScreen() {
     const middle = Math.ceil(levelRoundCount(next.level) / 2);
     if (completed >= middle && !next.stareDone) { beginStare(next); return; }
     if (completed >= middle && !next.feverDone) { beginFever(next); return; }
-    if (completed >= levelRoundCount(next.level)) { finishWin({ ...next, mental: next.mental <= 0 ? 0 : next.mental }); return; }
+    if (completed >= levelRoundCount(next.level)) {
+      if (canClear(completed, levelRoundCount(next.level), next.successes, next.mental)) finishWin(next);
+      else { setSession({ ...next, feedback: Text.ui.argumentLost }); setEnding("over"); setScreen("ending"); }
+      return;
+    }
     const nextRound = completed;
-    next = { ...next, mode: "typing", roundIndex: nextRound, remaining: limitFor(next.level), inputStarted: performance.now(), face: "NORMAL", feedback: "" };
+    next = { ...next, mode: "typing", roundIndex: nextRound, remaining: limitFor(next.level), inputElapsed: 0, face: "NORMAL", feedback: "" };
     setSession(next);
   };
 
   const continueReaction = () => {
-    if (!session) return;
+    const current = sessionRef.current;
+    if (!current || current.mode !== "reaction") return;
     playTone(440, 0.06);
-    if (session.reactionKind === "round") advanceAt(session, session.completed + 1);
-    else advanceAt(session, session.completed);
+    if (current.reactionKind === "round") advanceAt(current, current.completed + 1);
+    else advanceAt(current, current.completed);
   };
 
   const handleTimeout = useCallback(() => {
     const s = sessionRef.current;
     if (!s || s.mode !== "typing" || screenRef.current !== "play") return;
     const round = getSentence(s.scenario, s.level, s.roundIndex);
-    const currentInput = Array.from(s.input);
-    const targetInput = Array.from(round.target);
-    const targetLength = targetInput.length;
-    const matchedInput = currentInput.filter((char, index) => char === targetInput[index]).length;
-    const next = { ...s, anger: Math.min(T.advanced.angerMax, s.anger + T.advanced.angerTimeout), social: Math.max(0, s.social - T.advanced.socialTimeout), misses: [...s.misses, round.target], face: "SMIRK" as Face, typedChars: s.typedChars + currentInput.length, matchingChars: s.matchingChars + matchedInput, targetChars: s.targetChars + targetLength, typingMilliseconds: s.typingMilliseconds + (performance.now() - s.inputStarted) };
+    if (pendingRef.current) return;
+    const currentInput = Array.from(normalize(s.input));
+    const targetLength = normalize(round.target).length;
+    // An unsubmitted/unfinished reply cannot earn semantic success through timeout.
+    const matchedInput = 0;
+    const next = { ...s, anger: Math.min(T.advanced.angerMax, s.anger + T.advanced.angerTimeout), social: Math.max(0, s.social - T.advanced.socialTimeout), misses: [...s.misses, round.target], face: "SMIRK" as Face, typedChars: s.typedChars + currentInput.length, matchingChars: s.matchingChars + matchedInput, targetChars: s.targetChars + targetLength, typingMilliseconds: s.typingMilliseconds + s.inputElapsed };
     if (!clearResult(next)) startReaction(next, round.timeout, "ANNOYED", "round");
   }, []);
 
   const handleFeverMiss = useCallback(() => {
     const s = sessionRef.current;
     if (!s || s.mode !== "fever" || screenRef.current !== "play") return;
+    composingRef.current = false; setComposing(false);
     const index = s.feverIndex + 1;
     const updated = { ...s, feverIndex: index, feverY: INTERNAL.feverStartY, combo: 0, input: "", feedback: Text.ui.feverMiss };
     setTypedTarget("");
@@ -463,56 +493,85 @@ function GameScreen() {
     }
   }, [screen, ending, blanketRemaining]);
 
-  const submitAnswer = () => {
-    if (!session || (session.mode !== "typing" && session.mode !== "fever")) return;
-    if (composing) return;
-    const s = session;
-    const expected = activeTarget;
-    const typed = typedTarget;
+  const applyEvaluation = (s: Session, typed: string, result: Evaluation) => {
+    const round = getSentence(s.scenario, s.level, s.roundIndex);
+    const weight = normalize(round.target).length;
+    const pace = paceMultiplier(normalize(typed).length, s.inputElapsed, commitsRef.current, T.evaluation.minCpm, T.evaluation.maxCpm);
+    const measured: Session = { ...s, typedChars: s.typedChars + normalize(typed).length,
+      matchingChars: s.matchingChars + weight * result.score, targetChars: s.targetChars + weight,
+      typingMilliseconds: s.typingMilliseconds + s.inputElapsed };
+    if (result.accepted) {
+      const next = { ...measured, successes: s.successes + 1,
+        mental: Math.max(0, s.mental - Math.round(T.advanced.mentalHit * pace)),
+        anger: Math.max(0, s.anger - T.advanced.angerSuccess), social: Math.min(T.advanced.socialMax, s.social + T.advanced.socialSuccess),
+        calmConsumed: s.anger - T.advanced.angerSuccess < T.game.angerThreshold ? false : s.calmConsumed };
+      const slip = result.route === "script" ? result.reaction : undefined;
+      startReaction(next, slip ? (Text.evaluation.reactions as Record<string, string>)[slip] : round.win, slip ? "SMIRK" : "SURPRISED", "round");
+      playTone(740, 0.1);
+    } else {
+      const next = { ...measured, anger: Math.min(T.advanced.angerMax, s.anger + T.advanced.angerTypo), misses: [...s.misses, round.target] };
+      if (!clearResult(next)) startReaction(next, result.route === "semantic" ? Text.ui.semanticMiss : round.typo, "SMIRK", "round");
+      playTone(170, 0.11);
+    }
+  };
+
+  const submitAnswer = async () => {
+    const s = sessionRef.current;
+    if (!s || screenRef.current !== "play" || (s.mode !== "typing" && s.mode !== "fever") || pendingRef.current || composingRef.current || performance.now() - compositionEndedRef.current < 30) return;
+    const typed = s.input;
+    if (!normalize(typed)) { setSession({ ...s, feedback: Text.ui.emptyAnswer }); return; }
     if (s.mode === "typing") {
       if (s.remaining <= 0) { handleTimeout(); return; }
-      const round = currentRound;
-      if (!round) return;
-      const elapsed = performance.now() - s.inputStarted;
-    if (elapsed < T.advanced.minimumSendMs) {
-        setSession({ ...s, feedback: Text.ui.tooEarly });
-        return;
-      }
-      if (PROFANITY.some((word) => typed.includes(word))) {
-        const next = { ...s, anger: Math.min(T.advanced.angerMax, s.anger + T.advanced.angerCurse), social: Math.max(0, s.social - T.advanced.socialCurse), curses: s.curses + 1, misses: [...s.misses, round.target], typedChars: s.typedChars + Array.from(typed).length, targetChars: s.targetChars + Array.from(round.target).length, typingMilliseconds: s.typingMilliseconds + elapsed, face: "ANGRY" as Face };
-        setTypedTarget("");
+      if (s.inputElapsed < T.advanced.minimumSendMs) { setSession({ ...s, feedback: Text.ui.tooEarly }); return; }
+      const round = getSentence(s.scenario, s.level, s.roundIndex);
+      if (hasProfanity(typed)) {
+        const next = { ...s, anger: Math.min(T.advanced.angerMax, s.anger + T.advanced.angerCurse), social: Math.max(0, s.social - T.advanced.socialCurse), curses: s.curses + 1,
+          misses: [...s.misses, round.target], typedChars: s.typedChars + normalize(typed).length, targetChars: s.targetChars + normalize(round.target).length, typingMilliseconds: s.typingMilliseconds + s.inputElapsed };
         if (!clearResult(next)) startReaction(next, round.curse, "ANGRY", "round");
         return;
       }
-      const errors = countErrors(round.target, typed);
-      const matching = Math.max(0, Array.from(round.target).length - errors);
-      const measured: Session = { ...s, typedChars: s.typedChars + Array.from(typed).length, matchingChars: s.matchingChars + matching, targetChars: s.targetChars + Array.from(round.target).length, typingMilliseconds: s.typingMilliseconds + elapsed };
-      if (errors <= allowedErrors(s.level)) {
-        const next = { ...measured, mental: Math.max(0, s.mental - T.advanced.mentalHit), anger: Math.max(0, s.anger - T.advanced.angerSuccess), social: Math.min(T.advanced.socialMax, s.social + T.advanced.socialSuccess), face: "SURPRISED" as Face, calmConsumed: s.anger - T.advanced.angerSuccess < T.game.angerThreshold ? false : s.calmConsumed };
-        setTypedTarget("");
-        playTone(740, 0.1);
-        startReaction(next, round.win, next.face, "round");
-      } else {
-        const next = { ...measured, anger: Math.min(T.advanced.angerMax, s.anger + T.advanced.angerTypo), face: "SMIRK" as Face };
-        setTypedTarget("");
-        if (!clearResult(next)) startReaction(next, round.typo, "SMIRK", "round");
-        playTone(170, 0.11);
+      const script = scriptEvaluation(round.target, typed, allowedErrors(s.level), Text.evaluation.typoPatterns, T.evaluation.nearThreshold);
+      if (script) { applyEvaluation(s, typed, script); return; }
+      const controller = new AbortController();
+      pendingRef.current = controller; setEvaluationPending(true);
+      setSession({ ...s, feedback: Text.ui.evaluating });
+      try {
+        const result = await evaluateSemantic({ scenario: s.scenario, level: s.level, round: s.roundIndex, answer: typed }, controller.signal, T.evaluation.timeoutMs);
+        if (!controller.signal.aborted && pendingRef.current === controller && screenRef.current === "play") applyEvaluation(s, typed, result);
+      } catch {
+        if (!controller.signal.aborted && pendingRef.current === controller && screenRef.current === "play") setSession({ ...s, feedback: Text.ui.evaluationUnavailable });
+      } finally {
+        if (pendingRef.current === controller) { pendingRef.current = null; setEvaluationPending(false); }
       }
     } else {
-      if (typed === expected) {
+      // Falling phrases remain a transcription mini-game; no network call here.
+      if (s.feverY >= T.advanced.feverLine) { handleFeverMiss(); return; }
+      if (normalize(typed) === normalize(getDeadline(s))) {
         const newIndex = s.feverIndex + 1;
-        const hits = s.feverHits + 1;
-        const combo = s.combo + 1;
-        const next = { ...s, feverIndex: newIndex, feverY: INTERNAL.feverStartY, feverHits: hits, combo, input: "", feedback: "" };
+        const next = { ...s, feverIndex: newIndex, feverY: INTERNAL.feverStartY, feverHits: s.feverHits + 1, combo: s.combo + 1, input: "", feedback: "" };
         setTypedTarget("");
-        playTone(500 + combo * 110, 0.08);
+        playTone(500 + next.combo * 110, 0.08);
         if (newIndex >= (Text.scenarios as any)[s.scenario].levels[s.level].fever.length) finishFever(next);
         else setSession(next);
-      } else {
-        setSession({ ...s, feedback: Text.ui.typos });
-        playTone(180, 0.08);
-      }
+      } else { setSession({ ...s, feedback: Text.ui.typos }); playTone(180, 0.08); }
     }
+  };
+
+  const onCompositionStart = () => { composingRef.current = true; setComposing(true); };
+  const onCompositionEnd = (event: React.CompositionEvent<HTMLInputElement>) => {
+    composingRef.current = false; compositionEndedRef.current = performance.now(); setComposing(false);
+    if (!event.currentTarget.isConnected) return;
+    const value = event.currentTarget.value;
+    setTypedTarget(value);
+    commitsRef.current.push(sessionRef.current?.inputElapsed ?? 0);
+    setSession(old => old ? { ...old, input: value } : old);
+  };
+  const onInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (pendingRef.current) return;
+    const value = event.target.value;
+    if (!composingRef.current && value.length > (sessionRef.current?.input.length ?? 0)) commitsRef.current.push(sessionRef.current?.inputElapsed ?? 0);
+    setTypedTarget(value);
+    setSession(old => old ? { ...old, input: value, feedback: "" } : old);
   };
 
   const tapStare = () => {
@@ -526,8 +585,9 @@ function GameScreen() {
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.code === "Escape" && screenRef.current === "play") { setScreen("scenarios"); return; }
+      if (event.code === "Escape" && screenRef.current === "play") { cancelEvaluation(); composingRef.current = false; setComposing(false); screenRef.current = "scenarios"; setScreen("scenarios"); return; }
       if (event.code === "Enter" && screenRef.current === "title") { setScreen("scenarios"); return; }
+      if (event.repeat || event.isComposing) return;
       if (event.code !== "Space" || screenRef.current !== "play") return;
       if (document.activeElement instanceof HTMLInputElement) return;
       const current = sessionRef.current;
@@ -559,7 +619,7 @@ function GameScreen() {
   const missedSentences = session?.misses.length ? session.misses : [currentRound?.target ?? Text.ui.genericMiss];
   const blanketTarget = session ? missedSentences[session.blanketIndex % missedSentences.length] : "";
   const submitBlanket = () => {
-    if (!session) return;
+    if (!session || composingRef.current || performance.now() - compositionEndedRef.current < 30) return;
     if (blanketInput.trim() === blanketTarget) {
       const index = session.blanketIndex + 1;
       setBlanketInput("");
@@ -575,11 +635,11 @@ function GameScreen() {
   };
 
   const displayedAccuracy = session?.targetChars ? Math.round(session.matchingChars / session.targetChars * INTERNAL.percentMax) : INTERNAL.percentMax;
-  const averageWpm = session?.typingMilliseconds ? Math.round(session.typedChars / INTERNAL.typingUnit / (session.typingMilliseconds / INTERNAL.millisecondsPerSecond / INTERNAL.secondsPerMinute)) : 0;
+  const averageWpm = session?.typingMilliseconds ? Math.round(session.typedChars / (session.typingMilliseconds / INTERNAL.millisecondsPerSecond / INTERNAL.secondsPerMinute)) : 0;
   const enteredChars = Array.from(typedTarget);
-  const activeChars = Array.from(activeTarget);
   const checkedChars = Math.max(0, enteredChars.length - (composing ? 1 : 0));
-  const liveAccuracy = checkedChars ? Math.round(enteredChars.slice(0, checkedChars).filter((char, index) => char === activeChars[index]).length / checkedChars * INTERNAL.percentMax) : 0;
+  const liveAccuracy = checkedChars ? Math.round(Math.max(0, 1 - editDistance(normalize(activeTarget).slice(0, normalize(typedTarget).length), normalize(typedTarget)) / Math.max(normalize(typedTarget).length, 1)) * INTERNAL.percentMax) : 0;
+  const scriptedPreview = session?.mode !== "typing" || !typedTarget || normalize(activeTarget).startsWith(normalize(typedTarget)) || !!scriptEvaluation(activeTarget, typedTarget, allowedErrors(session.level), Text.evaluation.typoPatterns, T.evaluation.nearThreshold);
   const character = (Text.scenarios as any)[session?.scenario ?? selectedScenario].character;
   const roundNumber = session ? Math.min(session.completed + 1, levelRoundCount(session.level)) : 1;
 
@@ -656,13 +716,13 @@ function GameScreen() {
             <div className="prompt-row"><span className="prompt-label">{Text.ui.target}</span><span className="prompt-sentence">{currentRound.target}</span></div>
             <div className="input-row">
               <div className="timer-block"><span>{Text.ui.time}</span><b className={session.remaining <= 5 ? "urgent" : ""}>{Math.ceil(session.remaining)}<i>″</i></b></div>
-              <form className="typing-form" onSubmit={(event) => { event.preventDefault(); submitAnswer(); }}>
-                <TypingPreview target={currentRound.target} value={typedTarget} composing={composing} />
-                <input autoFocus aria-label={Text.ui.placeholder} value={typedTarget} onChange={(event) => { setTypedTarget(event.target.value); setSession((old) => old ? { ...old, input: event.target.value, feedback: "" } : old); }} onCompositionStart={() => setComposing(true)} onCompositionEnd={() => setComposing(false)} onKeyDown={onTextKey} placeholder={Text.ui.placeholder} />
-                <button type="submit" className="submit-button" disabled={composing}>{Text.ui.submit}</button>
+              <form aria-busy={evaluationPending} className="typing-form" onSubmit={(event) => { event.preventDefault(); submitAnswer(); }}>
+                <TypingPreview target={currentRound.target} value={typedTarget} composing={composing} freeReply={!scriptedPreview} />
+                <input key={`round-${session.roundIndex}`} autoFocus aria-label={Text.ui.placeholder} value={typedTarget} maxLength={MAX_ANSWER_LENGTH} readOnly={evaluationPending} onChange={onInputChange} onCompositionStart={onCompositionStart} onCompositionEnd={onCompositionEnd} onKeyDown={onTextKey} placeholder={Text.ui.placeholder} />
+                <button type="submit" className="submit-button" disabled={composing || evaluationPending}>{Text.ui.submit}</button>
               </form>
             </div>
-            <div className="typing-footer"><span>{session.feedback || Text.ui.countdown}</span><span>{Text.ui.liveAccuracy.replace("{value}", String(liveAccuracy))} · {Text.ui.curseCount.replace("{count}", String(session.curses))}</span></div>
+            <div className="typing-footer"><span>{session.feedback || Text.ui.countdown}</span><span>{scriptedPreview ? Text.ui.liveAccuracy.replace("{value}", String(liveAccuracy)) : Text.ui.originalReply} · {Text.ui.curseCount.replace("{count}", String(session.curses))}</span></div>
           </div>}
 
           {session.mode === "reaction" && <div className="dialog-panel reaction-panel pixel-panel">
@@ -692,8 +752,8 @@ function GameScreen() {
               <div className="dead-line" style={{ top: `${T.advanced.feverLine}%` }}><span>{Text.ui.deadLine}</span></div></div>
             <div className="fever-bottom"><p>{Text.ui.feverHint}</p><form className="fever-form" onSubmit={(event) => { event.preventDefault(); submitAnswer(); }}>
               <TypingPreview target={getDeadline(session)} value={typedTarget} composing={composing} />
-              <input autoFocus aria-label={Text.ui.placeholder} value={typedTarget} onChange={(event) => { setTypedTarget(event.target.value); setSession((old) => old ? { ...old, input: event.target.value, feedback: "" } : old); }} onCompositionStart={() => setComposing(true)} onCompositionEnd={() => setComposing(false)} onKeyDown={onTextKey} placeholder={Text.ui.placeholder} />
-              <button className="submit-button" disabled={composing}>{Text.ui.submit}</button>
+              <input key={`fever-${session.feverIndex}`} autoFocus aria-label={Text.ui.placeholder} value={typedTarget} maxLength={MAX_ANSWER_LENGTH} readOnly={evaluationPending} onChange={onInputChange} onCompositionStart={onCompositionStart} onCompositionEnd={onCompositionEnd} onKeyDown={onTextKey} placeholder={Text.ui.placeholder} />
+              <button className="submit-button" disabled={composing || evaluationPending}>{Text.ui.submit}</button>
             </form><span className="fever-feedback">{session.feedback}</span></div>
           </div>}
           <div className="play-corner"><span>{Text.ui.curseCount.replace("{count}", String(session.curses))}</span><span>{Text.ui.escapeHint}</span></div>
@@ -707,9 +767,9 @@ function GameScreen() {
             {session.level === 2 && <div className="certificate-toast">✦ {Text.ui.certificate} — {(Text.scenarios as any)[session.scenario].certificate}</div>}
             <p className="final-line">{Text.ui.finalLine}</p><div className="ending-actions"><button className="action-button" onClick={() => setScreen("scenarios")}>{Text.ui.select}</button><button className="text-button" onClick={() => setScreen("title")}>{Text.ui.toTitle}</button></div>
           </div>}
-          {ending === "over" && <div className="ending-content over-content pixel-panel"><p className="eyebrow">{Text.ui.overKicker}</p><h1>{Text.ui.overline}</h1><h2>「{Text.ui.overSub}」</h2><p className="over-reason">{session.curses >= T.advanced.curseLimit ? Text.ui.curseCount.replace("{count}", String(session.curses)) : session.anger >= T.advanced.angerMax ? Text.ui.anger : Text.ui.social}</p><button className="action-button" onClick={beginBlanket}>{Text.ui.next} ▶</button></div>}
+          {ending === "over" && <div className="ending-content over-content pixel-panel"><p className="eyebrow">{Text.ui.overKicker}</p><h1>{Text.ui.overline}</h1><h2>「{Text.ui.overSub}」</h2><p className="over-reason">{session.curses >= T.advanced.curseLimit ? Text.ui.curseCount.replace("{count}", String(session.curses)) : session.anger >= T.advanced.angerMax ? Text.ui.anger : session.social <= 0 ? Text.ui.social : Text.ui.argumentLost}</p><button className="action-button" onClick={beginBlanket}>{Text.ui.next} ▶</button></div>}
           {ending === "night" && <div className="night-narrative"><p>{Text.ui.badIntro}</p><h2>「{Text.ui.nightThought}」</h2><button className="action-button" onClick={() => { setEnding("blanket"); setBlanketInput(""); setBlanketFeedback(""); setBlanketRemaining(T.advanced.blanketSeconds); }}>{Text.ui.blanketTitle} ▶</button></div>}
-          {ending === "blanket" && <div className="blanket-game pixel-panel"><p className="eyebrow">{Text.ui.blanketEventKicker}</p><h2>{Text.ui.blanketTitle}</h2><p>{Text.ui.blanketPrompt}</p><div className="blanket-memory">“{blanketTarget}”</div><form className="blanket-form" onSubmit={(event) => { event.preventDefault(); submitBlanket(); }}><input autoFocus value={blanketInput} onChange={(event) => setBlanketInput(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter" && !event.nativeEvent.isComposing && event.nativeEvent.keyCode !== 229) { event.preventDefault(); submitBlanket(); } }} placeholder={Text.ui.placeholder} aria-label={Text.ui.placeholder} /><button className="submit-button">{Text.ui.submit}</button></form><p className="blanket-status">{blanketFeedback || `${session.blanketIndex + 1} / ${missedSentences.length} · ${Math.ceil(blanketRemaining)}″`}</p></div>}
+          {ending === "blanket" && <div className="blanket-game pixel-panel"><p className="eyebrow">{Text.ui.blanketEventKicker}</p><h2>{Text.ui.blanketTitle}</h2><p>{Text.ui.blanketPrompt}</p><div className="blanket-memory">“{blanketTarget}”</div><form className="blanket-form" onSubmit={(event) => { event.preventDefault(); submitBlanket(); }}><input autoFocus value={blanketInput} maxLength={MAX_ANSWER_LENGTH} onCompositionStart={onCompositionStart} onCompositionEnd={() => { composingRef.current = false; compositionEndedRef.current = performance.now(); setComposing(false); }} onChange={(event) => setBlanketInput(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter" && !event.nativeEvent.isComposing && event.nativeEvent.keyCode !== 229) { event.preventDefault(); submitBlanket(); } }} placeholder={Text.ui.placeholder} aria-label={Text.ui.placeholder} /><button className="submit-button" disabled={composing}>{Text.ui.submit}</button></form><p className="blanket-status">{blanketFeedback || `${session.blanketIndex + 1} / ${missedSentences.length} · ${Math.ceil(blanketRemaining)}″`}</p></div>}
           {ending === "done" && <div className="ending-content done-content pixel-panel"><p>{Text.ui.blanketLine1}</p><p>{Text.ui.blanketLine2}</p><h2>「{Text.ui.blanketEnd}」</h2><button className="action-button" onClick={() => startScenario(session.scenario, session.level)}>{Text.ui.retry} ▶</button></div>}
           {ending === "night" && <div className="night-room"><div className="night-window"><i /><i /><i /></div><div className="night-bed"><div className="pillow" /><div className="blanket-shape" /></div><span className="night-thought">{Text.ui.nightThought}</span></div>}
         </section>}
@@ -735,10 +795,10 @@ function Meter({ label, value, max, type }: { label: string; value: number; max:
   return <div className={`meter meter-${type}`}><div><span>{label}</span><b>{Math.round(value)}<small>/ {Math.round(max)}</small></b></div><i><em style={{ width: `${percent}%` }} /></i></div>;
 }
 
-function TypingPreview({ target, value, composing }: { target: string; value: string; composing: boolean }) {
+function TypingPreview({ target, value, composing, freeReply = false }: { target: string; value: string; composing: boolean; freeReply?: boolean }) {
   const entered = Array.from(value);
   const expected = Array.from(target);
-  return <div className="typing-preview" aria-hidden="true">{expected.map((char, index) => <span className={composing && index < entered.length ? "composing" : entered[index] === undefined ? "pending" : entered[index] === char ? "match" : "mismatch"} key={`${index}-${char}`}>{char}</span>)}</div>;
+  return <div className="typing-preview" aria-hidden="true">{expected.map((char, index) => <span className={freeReply ? "pending" : composing && index < entered.length ? "composing" : entered[index] === undefined ? "pending" : entered[index] === char ? "match" : "mismatch"} key={`${index}-${char}`}>{char}</span>)}</div>;
 }
 
 function Stat({ label, value }: { label: string; value: string }) {
