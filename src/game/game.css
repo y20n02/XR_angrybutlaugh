@@ -201,6 +201,16 @@ button:focus-visible, input:focus-visible { outline: 2px solid #f3c86c; outline-
 .howto-panel { width: min(720px, 100%); margin: 20px auto; padding: 16px 24px; }
 .howto-panel p { display: flex; align-items: baseline; gap: 17px; margin: 12px 0; color: #c8c0b0; font-size: 16px; line-height: 1.75; text-align: left; }
 .howto-panel b { color: #e9c26f; }
+/* [수정 김홍경 11/03] HOW TO PLAY 소제목·강조 색 */
+.howto-scene { max-width: 1040px; }
+.howto-panel { width: min(820px, 100%); }
+.howto-panel p > b { flex: 0 0 26px; }
+.howto-panel p > span { flex: 1; word-break: keep-all; }
+.howto-panel .how-em, .howto-panel .how-warn, .howto-panel .how-key { white-space: nowrap; }
+.howto-panel .how-head { display: block; margin-bottom: 2px; color: #fff2d2; font-size: 1.08em; font-weight: 700; }
+.howto-panel .how-em { color: #f3c86c; font-style: normal; font-weight: 700; }
+.howto-panel .how-warn { color: #ff7a7f; font-style: normal; font-weight: 700; }
+.howto-panel .how-key { display: inline-block; margin: 0 2px; padding: 0 7px; border: 1px solid #c5a95d; border-bottom-width: 3px; background: #24202a; color: #f3d683; font-family: var(--font-ui); font-size: 0.85em; line-height: 1.5; }
 
 .pixel-panel { border: 3px solid #e0c386; outline: 1px solid #302638; background: #171824f4; box-shadow: 4px 5px 0 #080911, inset 0 0 0 2px #62543c; }
 .collection-hint { margin: 10px 0 19px; color: #9b9384; font-size: 15px; }
@@ -524,4 +534,14 @@ button:focus-visible, input:focus-visible { outline: 2px solid #f3c86c; outline-
   .result-stat b { font-size: 13px; }
   .final-line { font-size: 12px; }
   .keyboard-hint { bottom: 2px; font-size: 11px; }
+}
+
+/* [수정 김홍경 11/03] 화면 높이가 낮을 때 HOW TO PLAY 제목·뒤로 버튼이 잘리지 않게 촘촘하게 */
+@media (max-height: 760px) {
+  .howto-scene { padding-top: 2%; padding-bottom: 2%; }
+  .howto-scene .scene-heading { font-size: clamp(24px, 3vw, 34px); }
+  .howto-panel { margin: 10px auto; padding: 8px 20px; }
+  .howto-panel p { margin: 6px 0; font-size: 14px; line-height: 1.55; }
+  .howto-panel .how-head { display: inline; margin: 0 10px 0 0; }
+  .howto-scene .text-button { margin-top: 6px; }
 }

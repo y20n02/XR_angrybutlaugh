@@ -634,7 +634,11 @@ function GameScreen() {
 
         {screen === "howto" && <section className="menu-scene howto-scene">
           <h2 className="scene-heading">{Text.ui.howTitle}</h2><div className="howto-panel pixel-panel">
-            {Text.ui.howBody.map((paragraph, index) => <p key={paragraph}><b>0{index + 1}</b>{paragraph}</p>)}
+            {/* [수정 김홍경 11/03] HOW TO PLAY를 "소제목|본문" 형식으로 나누고 강조 표시 지원 (ko.json howBody 참고) */}
+            {Text.ui.howBody.map((paragraph, index) => {
+              const [head, body] = paragraph.includes("|") ? paragraph.split("|") : ["", paragraph];
+              return <p key={paragraph}><b>0{index + 1}</b><span>{head && <strong className="how-head">{head}</strong>}{renderHowText(body)}</span></p>;
+            })}
           </div><button className="action-button" onClick={() => setScreen("title")}>{Text.ui.back}</button>
         </section>}
 
@@ -756,6 +760,17 @@ function GameScreen() {
       <div className="keyboard-hint">{Text.ui.tip}</div>
     </main>
   );
+}
+
+/* [수정 김홍경 11/03] HOW TO PLAY 강조 표시
+   **글자** → 금색 강조, !!글자!! → 빨간색 경고, [키] → 키보드 키 모양 */
+function renderHowText(text: string) {
+  return text.split(/(\*\*[^*]+\*\*|!![^!]+!!|\[[^\]]+\])/g).filter(Boolean).map((part, index) => {
+    if (part.startsWith("**")) return <em key={index} className="how-em">{part.slice(2, -2)}</em>;
+    if (part.startsWith("!!")) return <em key={index} className="how-warn">{part.slice(2, -2)}</em>;
+    if (part.startsWith("[")) return <kbd key={index} className="how-key">{part.slice(1, -1)}</kbd>;
+    return part;
+  });
 }
 
 function Meter({ label, value, max, type }: { label: string; value: number; max: number; type: string }) {
