@@ -1,5 +1,5 @@
 {
-  "title": "웃으며 말하기",
+  "title": "웃으며 화내기",
   "subtitle": "그때 그렇게 말할걸!",
   "ui": {
     "start": "GAME START",
@@ -107,7 +107,7 @@
     "loading": "대화 준비 중...",
     "titleEyebrow": "사회생활 생존 시뮬레이션 · 2001",
     "titleWindow": "퇴근 후 사무실",
-    "titleFooterLeft": "© 레트로 사회생활 연구회",
+    "titleFooterLeft": "HONGIL.DOT",
     "titleFooterCenter": "엔터를 눌러 숨을 고르세요",
     "version": "버전 1.0",
     "stageCount": "03 / 03",

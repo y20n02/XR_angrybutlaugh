@@ -155,6 +155,8 @@ button:focus-visible, input:focus-visible { outline: 2px solid #f3c86c; outline-
 .collection-count { position: absolute; right: 13px; /* [수정 김홍경 11/03] 아래 .title-menu 패딩과 함께 겹침 해결 */ color: #9d907c; font-size: 13px; }
 /* [수정 김홍경 11/03] 아래 조작 안내 문구와 겹치지 않게 위로 올림 */
 .title-footer { position: absolute; right: 25px; bottom: 36px; left: 25px; display: flex; justify-content: space-between; color: #5d5b68; font-size: 12px; letter-spacing: 0.16em; }
+/* [수정 김홍경 11/03] 왼쪽 아래 팀 이름 HONGIL.DOT: 제목(h1)과 같은 폰트·굵기·그림자, 크기만 작게 */
+.title-footer .title-footer-brand { align-self: flex-end; color: #fff2d2; font-family: var(--font-ui); font-size: 18px; font-weight: 700; letter-spacing: 0.08em; text-shadow: 2px 2px 0 #6e344a; }
 
 .menu-scene { display: flex; flex-direction: column; justify-content: center; width: 100%; max-width: 900px; margin: auto; padding: 7% 10% 5%; background: radial-gradient(ellipse at 50% 35%, #242437, #12131f 72%); }
 .scene-heading-row { display: flex; align-items: end; justify-content: space-between; margin-bottom: 23px; }

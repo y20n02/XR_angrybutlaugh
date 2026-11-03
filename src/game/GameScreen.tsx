@@ -629,7 +629,7 @@ function GameScreen() {
             <button className="menu-button" onClick={() => setScreen("howto")}>{Text.ui.howTo}</button>
             <button className="menu-button" onClick={() => setScreen("collection")}>{Text.ui.collection}<span className="collection-count">{Object.keys(save.certificates).length}/3</span></button>
           </div>
-          <div className="title-footer"><span>{Text.ui.titleFooterLeft}</span><span>{Text.ui.titleFooterCenter}</span><span>{Text.ui.version}</span></div>
+          <div className="title-footer"><span className="title-footer-brand">{Text.ui.titleFooterLeft}</span>{/* [수정 김홍경 11/03] 왼쪽 아래 팀 이름 HONGIL.DOT (제목과 같은 폰트) */}<span>{Text.ui.titleFooterCenter}</span><span>{Text.ui.version}</span></div>
         </section>}
 
         {screen === "howto" && <section className="menu-scene howto-scene">
