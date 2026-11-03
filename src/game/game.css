@@ -325,6 +325,12 @@ button:focus-visible, input:focus-visible { outline: 2px solid #f3c86c; outline-
 .dialog-panel .taunt-line, .dialog-panel .reaction-text { margin-top: auto; text-align: center; }
 .dialog-panel .prompt-row { align-self: center; justify-content: center; width: fit-content; max-width: 100%; padding-right: 16px; padding-left: 14px; }
 .dialog-panel .input-row { justify-content: center; }
+/* [수정 김홍경 11/03] 시작 전 대기 화면: 남은 시간 + 시작하기 버튼 + 안내 */
+.ready-row { display: flex; align-items: center; justify-content: center; gap: 18px; min-height: var(--input-h, 74px); }
+.ready-button { min-width: 200px; min-height: 54px; font-size: 18px; animation: ready-pulse 1.2s steps(2) infinite; }
+.ready-hint { color: #c8bca4; font-size: 15px; }
+.fever-bottom .ready-button { margin: 6px auto; }
+@keyframes ready-pulse { 50% { box-shadow: 0 0 0 2px #e5bd6855, 0 0 18px #e5bd6866; } }
 /* 넓은 화면에서는 왼쪽 남은 시간 칸만큼 오른쪽에 빈칸을 둬서 입력창 자체가 정가운데 오게 */
 @media (min-width: 1100px) { .dialog-panel .input-row::after { content: ""; flex: 0 0 67px; } }
 .dialog-panel .typing-footer { justify-content: center; gap: 28px; margin-bottom: auto; }

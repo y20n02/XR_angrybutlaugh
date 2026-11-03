@@ -44,6 +44,8 @@ const T = DebugPanel.define({
     stareGoal: { value: 20, min: 8, max: 40, step: 1, label: "기싸움 성공 연타 수" },
     stareSeconds: { value: 5, min: 3, max: 10, step: 1, label: "기싸움 제한 시간 (초)" },
     feverSpeed: { value: 12, min: 5, max: 28, step: 1, label: "피버 문장 낙하 속도 (높을수록 어려움)" },
+    /* [수정 김홍경 11/03] 피버(산성비) 문장 하나가 떨어지는 시간을 3초 늘림 */
+    feverExtraSeconds: { value: 3, min: 0, max: 10, step: 0.5, label: "피버 문장 1개 낙하 시간 추가 (초)" },
     calmCenter: { value: 55, min: 35, max: 75, step: 1, label: "호흡 성공 구간 위치" },
   },
   ui: {
@@ -159,6 +161,8 @@ type Session = {
   targetChars: number;
   typingMilliseconds: number;
   inputStarted: number;
+  /* [수정 김홍경 11/03] 시작 버튼을 누르기 전 대기 상태 (반박하기·기싸움·피버). true면 시간이 흐르지 않음 */
+  waiting?: boolean;
   blanketIndex: number;
 };
 
@@ -269,7 +273,7 @@ function GameScreen() {
       const dt = DebugPanel.frame(raw);
       const current = sessionRef.current;
       if (dt && current && screenRef.current === "play") {
-        if (current.mode === "typing") {
+        if (current.mode === "typing" && !current.waiting) {
           accumulatedDt += dt;
           if (now - lastPaint > INTERNAL.renderThrottleMs) {
             lastPaint = now;
@@ -287,7 +291,7 @@ function GameScreen() {
             if (position < 0) { position = -position; direction = 1; }
             return { ...old, calmPosition: position, calmDirection: direction };
           });
-        } else if (current.mode === "stare") {
+        } else if (current.mode === "stare" && !current.waiting) {
           accumulatedDt += dt;
           if (now - lastPaint > INTERNAL.renderThrottleMs) {
             lastPaint = now;
@@ -295,10 +299,13 @@ function GameScreen() {
             accumulatedDt = 0;
             setSession((old) => old?.mode === "stare" ? { ...old, stareRemaining: Math.max(0, old.stareRemaining - step) } : old);
           }
-        } else if (current.mode === "fever") {
+        } else if (current.mode === "fever" && !current.waiting) {
           accumulatedDt = 0;
           const multiplier = current.level === 0 ? T.advanced.feverEasyScale : current.level === 1 ? 1 : T.advanced.feverHardScale;
-          setSession((old) => old?.mode === "fever" ? { ...old, feverY: old.feverY + T.minigame.feverSpeed * multiplier * dt } : old);
+          /* [수정 김홍경 11/03] 원래 낙하 시간 + feverExtraSeconds(3초)가 되도록 속도를 다시 계산 */
+          const distance = T.advanced.feverLine - INTERNAL.feverStartY;
+          const fallSeconds = distance / (T.minigame.feverSpeed * multiplier) + T.minigame.feverExtraSeconds;
+          setSession((old) => old?.mode === "fever" ? { ...old, feverY: old.feverY + distance / fallSeconds * dt } : old);
         } else accumulatedDt = 0;
       } else if (dt && screenRef.current === "ending" && endingRef.current === "blanket") {
         accumulatedDt += dt;
@@ -351,7 +358,7 @@ function GameScreen() {
       calmConsumed: false, stareDone: false, feverDone: false, calmPosition: 0, calmDirection: 1,
       stareRemaining: T.minigame.stareSeconds, stareGauge: 0, feverIndex: 0, feverY: -14,
       feverHits: 0, combo: 0, feverWon: false, stareWon: false, misses: [], typedChars: 0, matchingChars: 0,
-      targetChars: 0, typingMilliseconds: 0, inputStarted: now, blanketIndex: 0,
+      targetChars: 0, typingMilliseconds: 0, inputStarted: now, blanketIndex: 0, waiting: true,
     });
     setTypedTarget("");
     setComposing(false);
@@ -377,13 +384,13 @@ function GameScreen() {
   };
 
   const beginFever = (next: Session) => {
-    setSession({ ...next, mode: "fever", feverDone: true, feverIndex: 0, feverY: -14, feverHits: 0, combo: 0, input: "", feedback: "" });
+    setSession({ ...next, mode: "fever", feverDone: true, feverIndex: 0, feverY: -14, feverHits: 0, combo: 0, input: "", feedback: "", waiting: true });
     setTypedTarget("");
     playTone(840, 0.2);
   };
 
   const beginStare = (next: Session) => {
-    setSession({ ...next, mode: "stare", stareDone: true, stareRemaining: T.minigame.stareSeconds, stareGauge: 0, face: "ANGRY", feedback: "" });
+    setSession({ ...next, mode: "stare", stareDone: true, stareRemaining: T.minigame.stareSeconds, stareGauge: 0, face: "ANGRY", feedback: "", waiting: true });
     playTone(190, 0.22);
   };
 
@@ -417,8 +424,17 @@ function GameScreen() {
     if (completed >= middle && !next.feverDone) { beginFever(next); return; }
     if (completed >= levelRoundCount(next.level)) { finishWin({ ...next, mental: next.mental <= 0 ? 0 : next.mental }); return; }
     const nextRound = completed;
-    next = { ...next, mode: "typing", roundIndex: nextRound, remaining: limitFor(next.level), inputStarted: performance.now(), face: "NORMAL", feedback: "" };
+    next = { ...next, mode: "typing", roundIndex: nextRound, remaining: limitFor(next.level), inputStarted: performance.now(), face: "NORMAL", feedback: "", waiting: true };
     setSession(next);
+  };
+
+  /* [수정 김홍경 11/03] 시작 버튼(또는 Enter)을 누르면 그때부터 제한 시간·낙하가 시작됨 */
+  const startWaiting = () => {
+    const s = sessionRef.current;
+    if (!s || !s.waiting) return;
+    setSession({ ...s, waiting: false, remaining: s.mode === "typing" ? limitFor(s.level) : s.remaining, stareRemaining: s.mode === "stare" ? T.minigame.stareSeconds : s.stareRemaining, inputStarted: performance.now(), feedback: "" });
+    setTypedTarget("");
+    playTone(620, 0.08);
   };
 
   const continueReaction = () => {
@@ -486,7 +502,7 @@ function GameScreen() {
   }, [screen, ending, blanketRemaining]);
 
   const submitAnswer = () => {
-    if (!session || (session.mode !== "typing" && session.mode !== "fever")) return;
+    if (!session || (session.mode !== "typing" && session.mode !== "fever") || session.waiting) return;
     if (composing) return;
     const s = session;
     const expected = activeTarget;
@@ -538,7 +554,7 @@ function GameScreen() {
   };
 
   const tapStare = () => {
-    if (!session || session.mode !== "stare") return;
+    if (!session || session.mode !== "stare" || session.waiting) return;
     const gauge = session.stareGauge + 1;
     if (gauge >= T.minigame.stareGoal) {
       const next = { ...session, mode: "reaction" as Mode, stareGauge: gauge, mental: Math.max(0, session.mental - T.advanced.mentalStareWin), face: "SURPRISED" as Face, stareWon: true, feedback: Text.ui.stareSuccess, reactionKind: "event" as const };
@@ -556,6 +572,10 @@ function GameScreen() {
       const isEnter = event.key === "Enter" || event.code === "NumpadEnter";
       if (isEnter && !event.repeat && !event.isComposing && !event.defaultPrevented && screenRef.current === "play" && sessionRef.current?.mode === "reaction") {
         event.preventDefault(); continueReaction(); return;
+      }
+      /* [수정 김홍경 11/03] 대기 중일 때 Enter(기싸움은 Space도)로 시작 */
+      if (!event.repeat && !event.isComposing && !event.defaultPrevented && screenRef.current === "play" && sessionRef.current?.waiting && (isEnter || (event.code === "Space" && sessionRef.current?.mode === "stare"))) {
+        event.preventDefault(); startWaiting(); return;
       }
       if (event.code !== "Space" || screenRef.current !== "play") return;
       if (document.activeElement instanceof HTMLInputElement) return;
@@ -687,14 +707,19 @@ function GameScreen() {
             <div className="dialog-name"><span>{runningScenario.opponent}</span><i>{Text.ui.moodNames[session.face]}</i></div>
             <p key={session.roundIndex} className="taunt-line">“{currentRound.taunt}”</p>
             <div className="prompt-row"><span className="prompt-label">{Text.ui.target}</span><span className="prompt-sentence">{currentRound.target}</span></div>
-            <div className="input-row">
+            {/* [수정 김홍경 11/03] 시작 전에는 입력창 대신 시작 버튼을 보여 줌 (시간이 흐르지 않음) */}
+            {session.waiting ? <div className="ready-row">
+              <div className="timer-block"><span>{Text.ui.time}</span><b>{Math.ceil(session.remaining)}<i>″</i></b></div>
+              <button className="action-button ready-button" onClick={startWaiting}>{Text.ui.readyStart} <b>↵</b></button>
+              <span className="ready-hint">{Text.ui.readyHint.replace("{seconds}", String(Math.ceil(session.remaining)))}</span>
+            </div> : <div className="input-row">
               <div className="timer-block"><span>{Text.ui.time}</span><b className={session.remaining <= 5 ? "urgent" : ""}>{Math.ceil(session.remaining)}<i>″</i></b></div>
               <form className="typing-form" onSubmit={(event) => { event.preventDefault(); submitAnswer(); }}>
                 <TypingPreview target={currentRound.target} value={typedTarget} composing={composing} />
                 <input autoFocus aria-label={Text.ui.placeholder} value={typedTarget} onChange={(event) => { setTypedTarget(event.target.value); setSession((old) => old ? { ...old, input: event.target.value, feedback: "" } : old); }} onCompositionStart={() => setComposing(true)} onCompositionEnd={() => setComposing(false)} onKeyDown={onTextKey} placeholder={Text.ui.placeholder} />
                 <button type="submit" className="submit-button" disabled={composing}>{Text.ui.submit}</button>
               </form>
-            </div>
+            </div>}
             <div className="typing-footer"><span>{session.feedback || Text.ui.countdown}</span><span>{Text.ui.liveAccuracy.replace("{value}", String(liveAccuracy))} · {Text.ui.curseCount.replace("{count}", String(session.curses))}</span></div>
           </div>}
 
@@ -715,19 +740,21 @@ function GameScreen() {
           {session.mode === "stare" && <div className="minigame-shade stare-overlay"><div className="stare-backdrop">{Text.ui.stareBackdrop}</div><div className="stare-portrait"><Portrait key={character} kind={character} face="ANGRY" /></div><div className="minigame-card stare-card pixel-panel">
             <p className="event-kicker">{Text.ui.stareEventKicker}</p><h2>{Text.ui.stareTitle}</h2><p>{Text.ui.stareHelp}</p><div className="stare-meter"><i style={{ width: `${Math.min(100, session.stareGauge / T.minigame.stareGoal * 100)}%` }} /></div>
             <div className="stare-meta"><span>{Text.ui.stareMeter}</span><b>{session.stareGauge} / {T.minigame.stareGoal}</b><strong>{session.stareRemaining.toFixed(1)}″</strong></div>
-            <button className="action-button" onClick={tapStare}>{Text.ui.stareAction}</button>
+            {/* [수정 김홍경 11/03] 기싸움도 시작 버튼을 눌러야 5초가 흐름 */}
+            {session.waiting ? <button className="action-button ready-button" onClick={startWaiting}>{Text.ui.readyStart} <b>↵</b></button> : <button className="action-button" onClick={tapStare}>{Text.ui.stareAction}</button>}
           </div></div>}
 
           {session.mode === "fever" && <div className="fever-overlay">
             <div className="fever-top"><span>✦ {Text.ui.fever}</span><b>{Text.ui.combo} ×{session.combo}</b><i>{Text.ui.successCount.replace("{count}", String(session.feverHits))}</i></div>
             <p className="fever-subtitle">「{Text.ui.feverSub}」</p>
-            <div className="fever-lane"><div className="falling-sentence" style={{ top: `${session.feverY}%`, transform: `translateX(-50%) scale(${feverDifficulty})` }}>{getDeadline(session)}</div>
+            <div className="fever-lane">{!session.waiting && <div className="falling-sentence" style={{ top: `${session.feverY}%`, transform: `translateX(-50%) scale(${feverDifficulty})` }}>{getDeadline(session)}</div>}{/* [수정 김홍경 11/03] 시작 전에는 떨어질 문장을 숨김 */}
               <div className="dead-line" style={{ top: `${T.advanced.feverLine}%` }}><span>{Text.ui.deadLine}</span></div></div>
-            <div className="fever-bottom"><p>{Text.ui.feverHint}</p><form className="fever-form" onSubmit={(event) => { event.preventDefault(); submitAnswer(); }}>
+            {/* [수정 김홍경 11/03] 피버(산성비)도 시작 버튼을 누르면 문장이 떨어지기 시작 */}
+            <div className="fever-bottom"><p>{session.waiting ? Text.ui.feverReadyHint : Text.ui.feverHint}</p>{session.waiting ? <button className="action-button ready-button" onClick={startWaiting}>{Text.ui.readyStart} <b>↵</b></button> : <form className="fever-form" onSubmit={(event) => { event.preventDefault(); submitAnswer(); }}>
               <TypingPreview target={getDeadline(session)} value={typedTarget} composing={composing} />
               <input autoFocus aria-label={Text.ui.placeholder} value={typedTarget} onChange={(event) => { setTypedTarget(event.target.value); setSession((old) => old ? { ...old, input: event.target.value, feedback: "" } : old); }} onCompositionStart={() => setComposing(true)} onCompositionEnd={() => setComposing(false)} onKeyDown={onTextKey} placeholder={Text.ui.placeholder} />
               <button className="submit-button" disabled={composing}>{Text.ui.submit}</button>
-            </form><span className="fever-feedback">{session.feedback}</span></div>
+            </form>}<span className="fever-feedback">{session.feedback}</span></div>
           </div>}
           <div className="play-corner"><span>{Text.ui.curseCount.replace("{count}", String(session.curses))}</span><span>{Text.ui.escapeHint}</span></div>
           <div className="crt-vignette" />
