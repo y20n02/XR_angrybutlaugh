@@ -54,8 +54,9 @@ const T = DebugPanel.define({
     controlH: { value: 50, min: 38, max: 76, step: 1, cssVar: "--control-h", unit: "px", label: "버튼 높이" },
     inputX: { value: 0, min: -100, max: 100, step: 1, cssVar: "--input-x", unit: "px", label: "입력창 가로 위치" },
     inputY: { value: 0, min: -80, max: 80, step: 1, cssVar: "--input-y", unit: "px", label: "입력창 세로 위치" },
-    inputW: { value: 620, min: 320, max: 1000, step: 1, cssVar: "--input-w", unit: "px", label: "입력창 너비" },
-    inputH: { value: 62, min: 44, max: 100, step: 1, cssVar: "--input-h", unit: "px", label: "입력창 높이" },
+    /* [수정 김홍경 11/03] 입력창 크기 키움: 너비 620→760, 높이 62→74 */
+    inputW: { value: 760, min: 320, max: 1000, step: 1, cssVar: "--input-w", unit: "px", label: "입력창 너비" },
+    inputH: { value: 74, min: 44, max: 100, step: 1, cssVar: "--input-h", unit: "px", label: "입력창 높이" },
   },
   audio: {
     _label: "효과음",
@@ -548,6 +549,13 @@ function GameScreen() {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.code === "Escape" && screenRef.current === "play") { setScreen("scenarios"); return; }
       if (event.code === "Enter" && screenRef.current === "title") { setScreen("scenarios"); return; }
+      /* [수정 김홍경 11/03] 반응 대사 화면에서 Enter로 '다음 대화' 진행 (마우스 클릭 없이)
+         - 길게 누를 때 반복 입력(repeat)과 한글 조합 중 Enter, 입력창에서 이미 처리한 Enter는 무시해서
+           반박 문장을 전송한 Enter가 반응 대사까지 건너뛰지 않게 함 */
+      const isEnter = event.key === "Enter" || event.code === "NumpadEnter";
+      if (isEnter && !event.repeat && !event.isComposing && !event.defaultPrevented && screenRef.current === "play" && sessionRef.current?.mode === "reaction") {
+        event.preventDefault(); continueReaction(); return;
+      }
       if (event.code !== "Space" || screenRef.current !== "play") return;
       if (document.activeElement instanceof HTMLInputElement) return;
       const current = sessionRef.current;
@@ -688,7 +696,7 @@ function GameScreen() {
           {session.mode === "reaction" && <div className="dialog-panel reaction-panel pixel-panel">
             <div className="dialog-name"><span>{runningScenario.opponent}</span><i>{Text.ui.moodNames[session.face]}</i></div>
             <p className="reaction-text">{session.feedback}</p>
-            <div className="reaction-controls"><span>{Text.ui.curseCount.replace("{count}", String(session.curses))}</span><button className="action-button" onClick={continueReaction}>{Text.ui.next} <b>▶</b></button></div>
+            <div className="reaction-controls"><span>{Text.ui.curseCount.replace("{count}", String(session.curses))}</span><button className="action-button" onClick={continueReaction}>{Text.ui.next} <b>↵</b>{/* [수정 김홍경 11/03] Enter로 넘어간다는 표시: ▶ → ↵ */}</button></div>
           </div>}
 
           {session.mode === "calm" && <div className="minigame-shade calm-overlay"><div className="minigame-card pixel-panel">
