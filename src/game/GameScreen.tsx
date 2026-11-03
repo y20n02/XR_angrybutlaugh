@@ -8,7 +8,27 @@ import "./game.css";
    2. Tuning requests edit schema defaults only.
    3. The platform injects DebugPanel; never add a local copy or script tag.
    4. Add tunables for every new gameplay feature and control. */
-const DebugPanel = (window as any).DebugPanel;
+/* [수정 김홍경 11/03] 로컬 실행(npm run dev)용 대체 DebugPanel
+   DebugPanel은 Verse8 플랫폼이 넣어 주는 기능이라, Verse8 밖(내 컴퓨터)에서는 없어서 게임이 로딩 화면에서 멈췄음.
+   Verse8에서는 플랫폼 것을 그대로 쓰고, 없을 때만 아래 기본값(value)으로 동작하게 함. */
+const LocalDebugPanel = {
+  define(schema: Record<string, Record<string, any>>) {
+    const out: Record<string, Record<string, any>> = {};
+    for (const group of Object.keys(schema)) {
+      out[group] = {};
+      for (const key of Object.keys(schema[group])) {
+        if (key === "_label") continue;
+        const item = schema[group][key];
+        out[group][key] = item.value;
+        if (item.cssVar) document.documentElement.style.setProperty(item.cssVar, `${item.value}${item.unit ?? ""}`);
+      }
+    }
+    return out as any;
+  },
+  stat() {},
+  frame(raw: number) { return raw; },
+};
+const DebugPanel = (window as any).DebugPanel ?? LocalDebugPanel;
 const T = DebugPanel.define({
   game: {
     _label: "게임 진행",

@@ -1,0 +1,27 @@
+/* [수정 김홍경 11/03] 픽셀 폰트 Galmuri 추가 (SIL OFL 1.1, src/assets/fonts/OFL-Galmuri.md)
+   - Galmuri11: 메뉴·라벨·버튼 등 UI 전체
+   - Galmuri14: 대사·반박 문장처럼 길게 읽는 글
+   폰트 파일을 프로젝트 안에 넣어서 외부 CDN 없이도 Verse8 배포본에서 그대로 보입니다. */
+@font-face {
+  font-family: "Galmuri11";
+  font-weight: 400;
+  font-display: swap;
+  src: url("../assets/fonts/Galmuri11.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Galmuri11";
+  font-weight: 700;
+  font-display: swap;
+  src: url("../assets/fonts/Galmuri11-Bold.woff2") format("woff2");
+}
+@font-face {
+  font-family: "Galmuri14";
+  font-weight: 400;
+  font-display: swap;
+  src: url("../assets/fonts/Galmuri14.woff2") format("woff2");
+}
+
+:root {
+  --font-ui: "Galmuri11", "Malgun Gothic", "Apple SD Gothic Neo", monospace;
+  --font-read: "Galmuri14", "Galmuri11", "Malgun Gothic", sans-serif;
+}

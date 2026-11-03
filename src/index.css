@@ -7,7 +7,8 @@
 body {
   background: #090a13;
   color: #f8f1e6;
-  font-family: "Courier New", "Malgun Gothic", "Apple SD Gothic Neo", monospace;
+  /* [수정 김홍경 11/03] 기본 글꼴을 픽셀 폰트 Galmuri11로 변경 */
+  font-family: var(--font-ui);
   -webkit-font-smoothing: antialiased;
 }
 
