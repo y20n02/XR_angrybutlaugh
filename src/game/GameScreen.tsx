@@ -102,7 +102,8 @@ const T = DebugPanel.define({
     selectionX: { value: 0, min: -100, max: 100, step: 1, cssVar: "--selection-x", unit: "px", label: "상황·난이도 버튼 가로 위치" },
     selectionY: { value: 0, min: -80, max: 80, step: 1, cssVar: "--selection-y", unit: "px", label: "상황·난이도 버튼 세로 위치" },
     selectionW: { value: 100, min: 60, max: 100, step: 1, cssVar: "--selection-w", unit: "%", label: "상황·난이도 버튼 너비" },
-    selectionH: { value: 75, min: 50, max: 110, step: 1, cssVar: "--selection-h", unit: "px", label: "상황·난이도 버튼 높이" },
+    /* [수정 김홍경 11/03] 상황·난이도 버튼 높이 75→92 (글자 키운 만큼) */
+    selectionH: { value: 92, min: 50, max: 110, step: 1, cssVar: "--selection-h", unit: "px", label: "상황·난이도 버튼 높이" },
     soundX: { value: 0, min: -50, max: 50, step: 1, cssVar: "--sound-x", unit: "px", label: "효과음 버튼 가로 위치" },
     soundY: { value: 0, min: -25, max: 25, step: 1, cssVar: "--sound-y", unit: "px", label: "효과음 버튼 세로 위치" },
     soundW: { value: 95, min: 60, max: 150, step: 1, cssVar: "--sound-w", unit: "px", label: "효과음 버튼 너비" },
