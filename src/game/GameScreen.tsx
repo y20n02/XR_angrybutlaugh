@@ -41,8 +41,13 @@ const T = DebugPanel.define({
     _label: "미니게임",
     calmSpeed: { value: 68, min: 25, max: 130, step: 1, label: "호흡 바늘 속도 (높을수록 어려움)" },
     calmWindow: { value: 18, min: 8, max: 35, step: 1, label: "호흡 성공 구간 폭" },
-    stareGoal: { value: 20, min: 8, max: 40, step: 1, label: "기싸움 성공 연타 수" },
-    stareSeconds: { value: 5, min: 3, max: 10, step: 1, label: "기싸움 제한 시간 (초)" },
+    /* [수정 김홍경 11/03] 기싸움 난이도별 목표 연타 수·제한 시간 (하 → 중 → 상으로 갈수록 어려움) */
+    stareGoal: { value: 20, min: 8, max: 40, step: 1, label: "기싸움 성공 연타 수 (하)" },
+    stareGoalNormal: { value: 24, min: 8, max: 45, step: 1, label: "기싸움 성공 연타 수 (중)" },
+    stareGoalHard: { value: 26, min: 8, max: 50, step: 1, label: "기싸움 성공 연타 수 (상)" },
+    stareSeconds: { value: 5, min: 3, max: 10, step: 0.5, label: "기싸움 제한 시간 (초, 하)" },
+    stareSecondsNormal: { value: 4.5, min: 2, max: 10, step: 0.5, label: "기싸움 제한 시간 (초, 중)" },
+    stareSecondsHard: { value: 4, min: 2, max: 10, step: 0.5, label: "기싸움 제한 시간 (초, 상)" },
     feverSpeed: { value: 12, min: 5, max: 28, step: 1, label: "피버 문장 낙하 속도 (높을수록 어려움)" },
     /* [수정 김홍경 11/03] 피버(산성비) 문장 하나가 떨어지는 시간을 3초 늘림 */
     feverExtraSeconds: { value: 3, min: 0, max: 10, step: 0.5, label: "피버 문장 1개 낙하 시간 추가 (초)" },
@@ -118,6 +123,9 @@ const T = DebugPanel.define({
   },
 });
 
+/* [수정 김홍경 11/03] 난이도(0=하, 1=중, 2=상)별 기싸움 목표 연타 수·제한 시간 */
+const stareGoalFor = (level: number) => level === 0 ? T.minigame.stareGoal : level === 1 ? T.minigame.stareGoalNormal : T.minigame.stareGoalHard;
+const stareSecondsFor = (level: number) => level === 0 ? T.minigame.stareSeconds : level === 1 ? T.minigame.stareSecondsNormal : T.minigame.stareSecondsHard;
 const INTERNAL = { storageKey: "time-to-get-mad-save-v1", secondsPerMinute: 60, millisecondsPerSecond: 1000, typingUnit: 5, frameClampSeconds: 0.05, renderThrottleMs: 80, percentMax: 100, feverStartY: -14 };
 const SCENARIO_IDS = ["office", "team", "shop"] as const;
 type ScenarioId = (typeof SCENARIO_IDS)[number];
@@ -356,7 +364,7 @@ function GameScreen() {
       scenario: id, level, mode: "typing", roundIndex: 0, completed: 0, input: "", remaining: limitFor(level),
       anger: 0, social: T.advanced.socialMax, mental: T.advanced.mentalMax, curses: 0, feedback: "", face: "NORMAL", reactionKind: "round",
       calmConsumed: false, stareDone: false, feverDone: false, calmPosition: 0, calmDirection: 1,
-      stareRemaining: T.minigame.stareSeconds, stareGauge: 0, feverIndex: 0, feverY: -14,
+      stareRemaining: stareSecondsFor(level), stareGauge: 0, feverIndex: 0, feverY: -14,
       feverHits: 0, combo: 0, feverWon: false, stareWon: false, misses: [], typedChars: 0, matchingChars: 0,
       targetChars: 0, typingMilliseconds: 0, inputStarted: now, blanketIndex: 0, waiting: true,
     });
@@ -390,7 +398,7 @@ function GameScreen() {
   };
 
   const beginStare = (next: Session) => {
-    setSession({ ...next, mode: "stare", stareDone: true, stareRemaining: T.minigame.stareSeconds, stareGauge: 0, face: "ANGRY", feedback: "", waiting: true });
+    setSession({ ...next, mode: "stare", stareDone: true, stareRemaining: stareSecondsFor(next.level), stareGauge: 0, face: "ANGRY", feedback: "", waiting: true });
     playTone(190, 0.22);
   };
 
@@ -432,7 +440,7 @@ function GameScreen() {
   const startWaiting = () => {
     const s = sessionRef.current;
     if (!s || !s.waiting) return;
-    setSession({ ...s, waiting: false, remaining: s.mode === "typing" ? limitFor(s.level) : s.remaining, stareRemaining: s.mode === "stare" ? T.minigame.stareSeconds : s.stareRemaining, inputStarted: performance.now(), feedback: "" });
+    setSession({ ...s, waiting: false, remaining: s.mode === "typing" ? limitFor(s.level) : s.remaining, stareRemaining: s.mode === "stare" ? stareSecondsFor(s.level) : s.stareRemaining, inputStarted: performance.now(), feedback: "" });
     setTypedTarget("");
     playTone(620, 0.08);
   };
@@ -556,7 +564,7 @@ function GameScreen() {
   const tapStare = () => {
     if (!session || session.mode !== "stare" || session.waiting) return;
     const gauge = session.stareGauge + 1;
-    if (gauge >= T.minigame.stareGoal) {
+    if (gauge >= stareGoalFor(session.level)) {
       const next = { ...session, mode: "reaction" as Mode, stareGauge: gauge, mental: Math.max(0, session.mental - T.advanced.mentalStareWin), face: "SURPRISED" as Face, stareWon: true, feedback: Text.ui.stareSuccess, reactionKind: "event" as const };
       setSession(next); playTone(820, 0.12);
     } else setSession({ ...session, stareGauge: gauge });
@@ -581,7 +589,8 @@ function GameScreen() {
       if (document.activeElement instanceof HTMLInputElement) return;
       const current = sessionRef.current;
       if (current?.mode === "calm") { event.preventDefault(); doCalm(current.calmPosition); }
-      if (current?.mode === "stare") { event.preventDefault(); tapStare(); }
+      /* [수정 김홍경 11/03] Space를 꾹 누르고 있을 때 자동 반복 입력(repeat)은 무시 → 한 번 누를 때 1칸만 올라감 */
+      if (current?.mode === "stare") { event.preventDefault(); if (!event.repeat) tapStare(); }
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
@@ -738,8 +747,8 @@ function GameScreen() {
           </div></div>}
 
           {session.mode === "stare" && <div className="minigame-shade stare-overlay"><div className="stare-backdrop">{Text.ui.stareBackdrop}</div><div className="stare-portrait"><Portrait key={character} kind={character} face="ANGRY" /></div><div className="minigame-card stare-card pixel-panel">
-            <p className="event-kicker">{Text.ui.stareEventKicker}</p><h2>{Text.ui.stareTitle}</h2><p>{Text.ui.stareHelp}</p><div className="stare-meter"><i style={{ width: `${Math.min(100, session.stareGauge / T.minigame.stareGoal * 100)}%` }} /></div>
-            <div className="stare-meta"><span>{Text.ui.stareMeter}</span><b>{session.stareGauge} / {T.minigame.stareGoal}</b><strong>{session.stareRemaining.toFixed(1)}″</strong></div>
+            <p className="event-kicker">{Text.ui.stareEventKicker}</p><h2>{Text.ui.stareTitle}</h2><p>{Text.ui.stareHelp.replace("{seconds}", String(stareSecondsFor(session.level))).replace("{goal}", String(stareGoalFor(session.level)))}</p><div className="stare-meter"><i style={{ width: `${Math.min(100, session.stareGauge / stareGoalFor(session.level) * 100)}%` }} /></div>
+            <div className="stare-meta"><span>{Text.ui.stareMeter}</span><b>{session.stareGauge} / {stareGoalFor(session.level)}</b><strong>{session.stareRemaining.toFixed(1)}″</strong></div>
             {/* [수정 김홍경 11/03] 기싸움도 시작 버튼을 눌러야 5초가 흐름 */}
             {session.waiting ? <button className="action-button ready-button" onClick={startWaiting}>{Text.ui.readyStart} <b>↵</b></button> : <button className="action-button" onClick={tapStare}>{Text.ui.stareAction}</button>}
           </div></div>}

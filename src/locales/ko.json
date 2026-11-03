@@ -56,7 +56,7 @@
     "calmSuccess": "호흡을 고르고 대화로 돌아갑니다.",
     "calmFail": "아직 속이 끓습니다. 한 번 더 숨을 고르세요.",
     "stareTitle": "눈 피하지 마",
-    "stareHelp": "5초 동안 Space를 빠르게 연타하거나 아래 버튼을 클릭하세요!",
+    "stareHelp": "{seconds}초 안에 Space를 {goal}번! 꾹 누르면 안 올라가요. 한 번씩 빠르게 연타하세요!",
     "stareMeter": "기싸움 게이지",
     "stareSuccess": "상대가 먼저 시선을 피했다!",
     "stareFail": "상대의 시선에 페이스를 빼앗겼다.",
