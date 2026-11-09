@@ -24,6 +24,18 @@ All player-visible Korean copy plus scenario metadata, character names, and uniq
 
 Active game implementation. Owns title/help/scenario/difficulty menus, IME-safe text entry, timing and accuracy, rage/social/mental meters, reaction states, rage-control and stare-down mini-games, three actually falling Fever Time sentences, victory and loss routes, blanket-kick practice, independent local unlock progression, certificate collection, generated character portraits, optional synthesized sound, and the DebugPanel tuning schema. The animation loop routes delta time through `DebugPanel.frame()`.
 
+## `src/game/IntroScreen.tsx`, `src/game/TutorialScreen.tsx`, `src/game/intro-tutorial.css`
+
+Opening sequence shown before the title on every launch, and the penalty-free interactive tutorial shown on the first GAME START (replayable from HOW TO PLAY). Copy is in `ko.json` (`intro`, `tutorial`), tuning is in the `tutorial` group of the DebugPanel schema, and timing arrives through `GameScreen`'s single frame loop. Completion is stored in localStorage under `time-to-get-mad-tutorial-v1`.
+
+## `src/game/BriefingScreen.tsx`
+
+Opponent introduction shown after difficulty selection and before each stage starts. Copy is in `ko.json` (`briefing`); styles are in `intro-tutorial.css`.
+
+## `src/game/PlayerBack.tsx`, `src/game/battle-layout.css`
+
+Over-the-shoulder battle composition used by the play and tutorial scenes: an SVG back view of the player in the right foreground (outfit varies by scenario), the opponent portrait enlarged to upper-body size on the left, and gauges split into player and opponent plates. These styles override the older centered `.stage-character` rules in `game.css`.
+
 ## `src/game/game.css`
 
 CRT scanlines, pixel borders, scene backdrops, portrait sizing and CSS fallback, dialogue animation, falling sentence lane and fail line, ending scenes, and responsive styling. Tunable control geometry uses schema-backed CSS custom properties with matching default fallbacks.

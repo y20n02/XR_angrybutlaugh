@@ -2,6 +2,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Text from "../locales/ko.json";
 import Assets from "../assets.json";
 import "./game.css";
+/* [추가 인트로·튜토리얼] 화면 본체는 아래 두 파일에 있고, 이 파일에는 연결 코드만 있음 */
+import "./intro-tutorial.css";
+import "./battle-layout.css";
+import PlayerBack from "./PlayerBack";
+import IntroScreen from "./IntroScreen";
+import TutorialScreen from "./TutorialScreen";
+import BriefingScreen from "./BriefingScreen";
 
 /* TUNABLES CONTRACT — read before editing this file.
    1. Gameplay and UI constants live in DebugPanel.define below; read T.* where used.
@@ -65,6 +72,19 @@ const T = DebugPanel.define({
     inputW: { value: 760, min: 320, max: 1000, step: 1, cssVar: "--input-w", unit: "px", label: "입력창 너비" },
     inputH: { value: 74, min: 44, max: 100, step: 1, cssVar: "--input-h", unit: "px", label: "입력창 높이" },
   },
+  /* [추가 인트로·튜토리얼] 오프닝 속도와 연습 난이도 */
+  tutorial: {
+    _label: "인트로·튜토리얼",
+    introCharsPerSecond: { value: 24, min: 8, max: 60, step: 1, label: "인트로 글자 출력 속도 (초당)" },
+    introHoldSeconds: { value: 1.4, min: 0.4, max: 5, step: 0.1, label: "인트로 문장 유지 시간 (초)" },
+    introFinaleSeconds: { value: 2.2, min: 0.5, max: 6, step: 0.1, label: "인트로 마지막 문장 유지 시간 (초)" },
+    typos: { value: 3, min: 0, max: 8, step: 1, label: "튜토리얼 허용 오타 수" },
+    startAnger: { value: 30, min: 0, max: 60, step: 1, label: "튜토리얼 시작 분노" },
+    calmSpeed: { value: 42, min: 15, max: 130, step: 1, label: "튜토리얼 호흡 바늘 속도" },
+    calmWindow: { value: 28, min: 8, max: 50, step: 1, label: "튜토리얼 호흡 성공 구간 폭" },
+    stareGoal: { value: 8, min: 3, max: 30, step: 1, label: "튜토리얼 기싸움 연타 수" },
+    feverFallSeconds: { value: 15, min: 5, max: 30, step: 0.5, label: "튜토리얼 피버 문장 낙하 시간 (초)" },
+  },
   audio: {
     _label: "효과음",
     volume: { value: 0.22, min: 0, max: 0.6, step: 0.01, label: "효과음 음량" },
@@ -127,9 +147,10 @@ const T = DebugPanel.define({
 const stareGoalFor = (level: number) => level === 0 ? T.minigame.stareGoal : level === 1 ? T.minigame.stareGoalNormal : T.minigame.stareGoalHard;
 const stareSecondsFor = (level: number) => level === 0 ? T.minigame.stareSeconds : level === 1 ? T.minigame.stareSecondsNormal : T.minigame.stareSecondsHard;
 const INTERNAL = { storageKey: "time-to-get-mad-save-v1", secondsPerMinute: 60, millisecondsPerSecond: 1000, typingUnit: 5, frameClampSeconds: 0.05, renderThrottleMs: 80, percentMax: 100, feverStartY: -14 };
+const TUTORIAL_STORAGE_KEY = "time-to-get-mad-tutorial-v1";
 const SCENARIO_IDS = ["office", "team", "shop"] as const;
 type ScenarioId = (typeof SCENARIO_IDS)[number];
-type Screen = "title" | "howto" | "scenarios" | "difficulty" | "play" | "ending" | "collection";
+type Screen = "intro" | "tutorial" | "briefing" | "title" | "howto" | "scenarios" | "difficulty" | "play" | "ending" | "collection";
 type Mode = "typing" | "reaction" | "calm" | "stare" | "fever";
 type Ending = "win" | "over" | "night" | "blanket" | "done";
 type Face = "NORMAL" | "SMILE" | "SMIRK" | "ANNOYED" | "SURPRISED" | "ANGRY" | "DEFEATED";
@@ -191,6 +212,14 @@ function loadSave(): SaveData {
   }
 }
 
+function loadTutorialDone() {
+  try {
+    return localStorage.getItem(TUTORIAL_STORAGE_KEY) === "done";
+  } catch {
+    return false;
+  }
+}
+
 function getSentence(scenario: ScenarioId, level: number, round: number) {
   return (Text.scenarios as any)[scenario].levels[level].rounds[round];
 }
@@ -246,7 +275,11 @@ function Portrait({ kind, face, small = false }: { kind: string; face: Face; sma
 }
 
 function GameScreen() {
-  const [screen, setScreen] = useState<Screen>("title");
+  const [screen, setScreen] = useState<Screen>("intro");
+  const [tutorialDone, setTutorialDone] = useState(loadTutorialDone);
+  const [tutorialReturn, setTutorialReturn] = useState<Screen>("scenarios");
+  const [briefingLevel, setBriefingLevel] = useState(0);
+  const introFrameRef = useRef<((dt: number) => void) | null>(null);
   const [ending, setEnding] = useState<Ending>("over");
   const [selectedScenario, setSelectedScenario] = useState<ScenarioId>("office");
   const [save, setSave] = useState<SaveData>(loadSave);
@@ -279,6 +312,7 @@ function GameScreen() {
       const raw = Math.min((now - previous) / INTERNAL.millisecondsPerSecond, INTERNAL.frameClampSeconds);
       previous = now;
       const dt = DebugPanel.frame(raw);
+      if (dt) introFrameRef.current?.(dt);
       const current = sessionRef.current;
       if (dt && current && screenRef.current === "play") {
         if (current.mode === "typing" && !current.waiting) {
@@ -356,6 +390,15 @@ function GameScreen() {
   const currentRound = session ? getSentence(session.scenario, session.level, session.roundIndex) : null;
   const activeTarget = session?.mode === "fever" ? getDeadline(session) : session?.mode === "typing" ? currentRound?.target : "";
   const feverDifficulty = session ? session.level === 0 ? T.advanced.feverEasyScale : session.level === 1 ? 1 : T.advanced.feverHardScale : 1;
+
+  /* [추가 인트로·튜토리얼] 튜토리얼을 아직 안 봤으면 GAME START 때 먼저 보여 줌 */
+  const openTutorial = (returnTo: Screen) => { setTutorialReturn(returnTo); setScreen("tutorial"); };
+  const startGame = () => { if (tutorialDone) setScreen("scenarios"); else openTutorial("scenarios"); };
+  const finishTutorial = () => {
+    setTutorialDone(true);
+    try { localStorage.setItem(TUTORIAL_STORAGE_KEY, "done"); } catch { /* Saving is optional; the tutorial just shows again. */ }
+    setScreen(tutorialReturn);
+  };
 
   const startScenario = (id: ScenarioId, level: number) => {
     setSelectedScenario(id);
@@ -573,7 +616,7 @@ function GameScreen() {
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.code === "Escape" && screenRef.current === "play") { setScreen("scenarios"); return; }
-      if (event.code === "Enter" && screenRef.current === "title") { setScreen("scenarios"); return; }
+      if (event.code === "Enter" && !event.repeat && screenRef.current === "title") { startGame(); return; }
       /* [수정 김홍경 11/03] 반응 대사 화면에서 Enter로 '다음 대화' 진행 (마우스 클릭 없이)
          - 길게 누를 때 반복 입력(repeat)과 한글 조합 중 Enter, 입력창에서 이미 처리한 Enter는 무시해서
            반박 문장을 전송한 Enter가 반응 대사까지 건너뛰지 않게 함 */
@@ -651,11 +694,16 @@ function GameScreen() {
           <button className="sound-toggle" data-ui onClick={() => setSoundOn((value) => !value)}>{soundOn ? "♪" : "×"} <span>{soundOn ? Text.ui.soundOn : Text.ui.soundOff}</span></button>
         </header>
 
+        {screen === "intro" && <IntroScreen T={T} frameRef={introFrameRef} Portrait={Portrait} onTone={playTone} onDone={() => setScreen("title")} />}
+        {screen === "tutorial" && <TutorialScreen T={T} frameRef={introFrameRef} kit={{ Portrait, Meter, TypingPreview, countErrors, renderHowText }} onTone={playTone} onFinish={finishTutorial} />}
+
+        {screen === "briefing" && <BriefingScreen scenarioId={selectedScenario} level={briefingLevel} Portrait={Portrait} onTone={playTone} onStart={() => startScenario(selectedScenario, briefingLevel)} onBack={() => setScreen("difficulty")} />}
+
         {screen === "title" && <section className="title-screen">
           <div className="title-backdrop"><div className="neon-window"><span>{Text.ui.titleWindow}</span><i /></div><div className="cityline" /></div>
           <div className="title-copy"><p className="eyebrow">{Text.ui.titleEyebrow}</p><h1>{Text.title}</h1><p className="title-sub">「{Text.subtitle}」</p><div className="title-rule"><span /></div></div>
           <div className="title-menu" data-ui>
-            <button className="menu-button primary" onClick={() => setScreen("scenarios")}>{Text.ui.start}<span>▶</span></button>
+            <button className="menu-button primary" onClick={startGame}>{Text.ui.start}<span>▶</span></button>
             <button className="menu-button" onClick={() => setScreen("howto")}>{Text.ui.howTo}</button>
             <button className="menu-button" onClick={() => setScreen("collection")}>{Text.ui.collection}<span className="collection-count">{Object.keys(save.certificates).length}/3</span></button>
           </div>
@@ -669,7 +717,7 @@ function GameScreen() {
               const [head, body] = paragraph.includes("|") ? paragraph.split("|") : ["", paragraph];
               return <p key={paragraph}><b>0{index + 1}</b><span>{head && <strong className="how-head">{head}</strong>}{renderHowText(body)}</span></p>;
             })}
-          </div><button className="action-button" onClick={() => setScreen("title")}>{Text.ui.back}</button>
+          </div><div className="ending-actions howto-actions"><button className="action-button tutorial-replay" onClick={() => openTutorial("title")}>{Text.tutorial.replay}</button><button className="action-button" onClick={() => setScreen("title")}>{Text.ui.back}</button></div>
         </section>}
 
         {screen === "scenarios" && <section className="menu-scene scenario-scene">
@@ -692,7 +740,7 @@ function GameScreen() {
           <div className="difficulty-list" data-ui>{Text.ui.difficulty.map((label, level) => {
             const unlocked = level <= save.unlocked[selectedScenario];
             const cleared = level < save.unlocked[selectedScenario] || (level === 2 && !!save.certificates[selectedScenario]);
-            return <button key={label} className={`difficulty-option level-${level} ${unlocked ? "" : "locked"}`} disabled={!unlocked} onClick={() => startScenario(selectedScenario, level)}>
+            return <button key={label} className={`difficulty-option level-${level} ${unlocked ? "" : "locked"}`} disabled={!unlocked} onClick={() => { setBriefingLevel(level); setScreen("briefing"); }}>
               <span className="difficulty-number">0{level + 1}</span><span className="difficulty-copy"><b>{label}</b><small>{Text.ui.difficultyMeta[level]}</small></span>
               <span className="difficulty-status">{cleared ? `✓ ${Text.ui.cleared}` : unlocked ? "▶" : `▣ ${Text.ui.locked}`}</span>
             </button>;
@@ -703,18 +751,20 @@ function GameScreen() {
         {screen === "play" && session && <section className={`play-scene play-${session.mode} mood-${session.face.toLowerCase()} char-${character}`}>
           <div className="scene-background" />
           <div className="scene-meta"><span>{runningScenario.setting}</span><span>{Text.ui.round.replace("{current}", String(roundNumber)).replace("{total}", String(levelRoundCount(session.level)))}</span></div>
-          <div className="hud-bars">
+          <div className="hud-bars"><div className="battle-plate plate-player"><span className="plate-name">{Text.battle.player}</span>
             <Meter label={Text.ui.anger} value={session.anger} max={T.advanced.angerMax} type="anger" />
-            <Meter label={Text.ui.social} value={session.social} max={T.advanced.socialMax} type="social" />
-            <Meter label={Text.ui.mental} value={session.mental} max={T.advanced.mentalMax} type="mental" />
+            <Meter label={Text.ui.social} value={session.social} max={T.advanced.socialMax} type="social" /></div><div className="battle-plate plate-opponent"><span className="plate-name">{runningScenario.opponent}</span>
+            <Meter label={Text.ui.mental} value={session.mental} max={T.advanced.mentalMax} type="mental" /></div>
           </div>
+          <PlayerBack kind={character} />
           <div className={`stage-character ${session.mode === "stare" ? "character-emphasis" : ""}`}>
             <Portrait key={character} kind={character} face={session.face} small={session.mode === "fever"} />
-            <div className="character-tag"><b>{runningScenario.opponent}</b><small>{runningScenario.role}</small></div>
+            {/* 상대 이름표는 위쪽 게이지 패널(plate-opponent)로 옮김 */}
           </div>
+          {session.mode === "typing" && <p key={session.roundIndex} className="battle-taunt">“{currentRound.taunt}”</p>}
           {session.mode === "typing" && <div className="dialog-panel pixel-panel">
             <div className="dialog-name"><span>{runningScenario.opponent}</span><i>{Text.ui.moodNames[session.face]}</i></div>
-            <p key={session.roundIndex} className="taunt-line">“{currentRound.taunt}”</p>
+            {/* 상대 대사는 인물이 보이도록 대화창 위(battle-taunt)로 옮김 */}
             <div className="prompt-row"><span className="prompt-label">{Text.ui.target}</span><span className="prompt-sentence">{currentRound.target}</span></div>
             {/* [수정 김홍경 11/03] 시작 전에는 입력창 대신 시작 버튼을 보여 줌 (시간이 흐르지 않음) */}
             {session.waiting ? <div className="ready-row">
@@ -746,7 +796,7 @@ function GameScreen() {
             {calmMessage && <p className="inline-feedback">{calmMessage}</p>}
           </div></div>}
 
-          {session.mode === "stare" && <div className="minigame-shade stare-overlay"><div className="stare-backdrop">{Text.ui.stareBackdrop}</div><div className="stare-portrait"><Portrait key={character} kind={character} face="ANGRY" /></div><div className="minigame-card stare-card pixel-panel">
+          {session.mode === "stare" && <div className="minigame-shade stare-overlay"><div className="stare-backdrop">{Text.ui.stareBackdrop}</div><div className="stare-portrait"><Portrait key={character} kind={character} face="ANGRY" /></div><PlayerBack kind={character} /><div className="minigame-card stare-card pixel-panel">
             <p className="event-kicker">{Text.ui.stareEventKicker}</p><h2>{Text.ui.stareTitle}</h2><p>{Text.ui.stareHelp.replace("{seconds}", String(stareSecondsFor(session.level))).replace("{goal}", String(stareGoalFor(session.level)))}</p><div className="stare-meter"><i style={{ width: `${Math.min(100, session.stareGauge / stareGoalFor(session.level) * 100)}%` }} /></div>
             <div className="stare-meta"><span>{Text.ui.stareMeter}</span><b>{session.stareGauge} / {stareGoalFor(session.level)}</b><strong>{session.stareRemaining.toFixed(1)}″</strong></div>
             {/* [수정 김홍경 11/03] 기싸움도 시작 버튼을 눌러야 5초가 흐름 */}

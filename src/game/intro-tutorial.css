@@ -1,0 +1,75 @@
+/* 인트로 */
+.intro-screen { position: absolute; inset: 42px 0 0; overflow: hidden; cursor: pointer; background: #090a13; }
+.intro-shade { position: absolute; z-index: 1; inset: 0; background: #080910a8; transition: background 400ms steps(4); }
+.intro-taunt .intro-shade { background: radial-gradient(ellipse at 50% 45%, #562a32e0, #0a0911f5 72%); }
+.intro-finale .intro-shade { background: #080910e0; }
+.intro-portrait { position: absolute; z-index: 2; top: 6%; left: 50%; display: flex; flex-direction: column; align-items: center; width: min(300px, 26vw); height: 66%; transform: translateX(-50%); animation: intro-portrait-in 260ms steps(4) both; }
+.intro-portrait .portrait { flex: 1; min-height: 0; }
+.intro-portrait b { padding: 6px 14px; border: 1px solid #d2b770; background: #1c1b22e6; color: #f6e0af; font-size: 15px; }
+.intro-line { position: absolute; z-index: 3; top: 40%; right: 8%; left: 8%; margin: 0; color: #f4efdf; font-family: var(--font-read); font-size: clamp(22px, 2.6vw, 36px); line-height: 1.6; text-align: center; text-shadow: 2px 3px 0 #0a0911; word-break: keep-all; }
+.intro-taunt .intro-line { top: auto; bottom: 11%; color: #ffd9c2; font-size: clamp(20px, 2.2vw, 30px); }
+.intro-finale .intro-line { top: 36%; color: #fff2d2; font-family: var(--font-ui); font-size: clamp(36px, min(6vw, 10vh), 78px); font-weight: 700; letter-spacing: 0.08em; text-shadow: 4px 5px 0 #6e344a, 7px 8px 0 #17141f, 0 0 32px #ec9a6544; }
+.intro-ghost { visibility: hidden; }
+.intro-skip { position: absolute; z-index: 4; top: 8px; right: 16px; margin: 0; font-size: 16px; }
+.intro-hint { position: absolute; z-index: 4; right: 0; bottom: 34px; left: 0; color: #8f8576; font-size: 14px; letter-spacing: 0.08em; text-align: center; }
+@keyframes intro-portrait-in { from { opacity: 0; transform: translateX(-50%) translateY(14px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+
+/* 대결 전 상대 소개 */
+.briefing-scene { --briefing-lattice: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='72' height='72' fill='none' stroke='%239f93e0' stroke-opacity='.42' stroke-width='1.5'%3E%3Cpath d='M36 4 68 36 36 68 4 36Z'/%3E%3Cpath d='M36 18 54 36 36 54 18 36Z'/%3E%3Ccircle cx='36' cy='36' r='5'/%3E%3Ccircle cx='0' cy='0' r='11'/%3E%3Ccircle cx='72' cy='0' r='11'/%3E%3Ccircle cx='0' cy='72' r='11'/%3E%3Ccircle cx='72' cy='72' r='11'/%3E%3C/svg%3E"); position: absolute; inset: 42px 0 0; display: grid; grid-template-columns: minmax(0, 11fr) minmax(0, 9fr); gap: 14px; padding: 18px 22px 62px; overflow: hidden; background: var(--briefing-lattice) 0 0 / 72px 72px, #241f5e; }
+.briefing-frame, .briefing-side { position: relative; min-height: 0; border: 3px solid #c9bdf0; outline: 3px solid #17133f; box-shadow: inset 0 0 0 3px #4a3f9c, 0 0 0 6px #6a5cc0; }
+.briefing-frame { overflow: hidden; background: var(--briefing-lattice) 18px 18px / 72px 72px, linear-gradient(170deg, #4a3fa6, #2a2470 70%); }
+.briefing-portrait { position: absolute; inset: 3% 10% 0; }
+.briefing-portrait .portrait { filter: none; }
+.briefing-portrait .portrait-shadow, .briefing-portrait .portrait-glint { display: none; }
+/* 원본이 전신 그림이라 2.4배로 키워 상반신만 보이게 함 */
+.briefing-portrait .has-art .portrait-art { inset: 0 auto auto -70%; width: 240%; max-width: none; height: 240%; object-position: center top; }
+.briefing-nameplate { position: absolute; z-index: 6; bottom: 16px; left: 16px; display: flex; flex-direction: column; gap: 4px; padding: 9px 16px; border: 2px solid #e0c386; background: #171824f4; box-shadow: 3px 3px 0 #0a0a18; }
+.briefing-nameplate b { color: #f6e0af; font-size: clamp(20px, 2vw, 28px); }
+.briefing-nameplate small { color: #b9aed0; font-size: 15px; }
+.briefing-side { display: flex; flex-direction: column; gap: 12px; padding: 14px 20px 18px; background: var(--briefing-lattice) 0 0 / 72px 72px, #2c2670; }
+.briefing-head { text-align: center; }
+.briefing-head p { margin: 0 0 2px; color: #e9c26f; font-size: 15px; letter-spacing: 0.12em; }
+.briefing-head h2 { margin: 0; color: #fff2d2; font-size: clamp(26px, 3vw, 40px); text-shadow: 3px 3px 0 #17133f; }
+.briefing-head span { color: #d6cdf0; font-size: 15px; }
+.briefing-menu { display: flex; flex: 1; flex-direction: column; justify-content: center; gap: 8px; min-height: 0; }
+.briefing-menu button { align-self: center; width: min(280px, 90%); min-height: 44px; border: 2px solid; border-color: #efeaff #5a5078 #5a5078 #efeaff; border-radius: 0; background: #b9b4c9; box-shadow: 0 0 0 2px #17133f; color: #1c1838; font-size: 18px; font-weight: 700; }
+.briefing-menu button:hover, .briefing-menu button.selected { background: #f3c86c; color: #1c1838; }
+.briefing-menu .briefing-start { background: #574234; color: #ffdf8a; }
+.briefing-menu .briefing-start.selected { animation: ready-pulse 1.2s steps(2) infinite; }
+.briefing-box { display: flex; align-items: center; min-height: 98px; padding: 12px 16px; border: 3px solid #17133f; background: #f7f4ff; box-shadow: inset 0 0 0 2px #8f85c4; }
+.briefing-box p { width: 100%; margin: 0; color: #1c1838; font-family: var(--font-read); font-size: clamp(16px, 1.45vw, 20px); line-height: 1.55; word-break: keep-all; animation: dialogue-reveal 500ms steps(30, end) both; }
+.briefing-hint { position: absolute; right: 0; bottom: 34px; left: 0; color: #cfc6ea; font-size: 13px; letter-spacing: 0.08em; text-align: center; }
+
+/* 튜토리얼 */
+.tutorial-bar { position: absolute; z-index: 20; top: 6px; right: 27px; left: 27px; display: flex; align-items: center; justify-content: space-between; height: 28px; color: #e0c992; font-size: 13px; letter-spacing: 0.12em; text-shadow: 1px 2px #17131b; }
+.tutorial-bar .text-button { margin: 0; padding: 2px 6px; font-size: 14px; }
+.tutorial-spotlight { padding: 6px 8px; outline: 2px solid #f3c86c; background: #171824d9; animation: ready-pulse 1.2s steps(2) infinite; }
+.tutorial-coach { position: absolute; z-index: 9; top: 30%; left: 49%; width: min(240px, 18%); padding: 8px 10px; }
+.tutorial-coach b { color: #f1cb79; font-size: 15px; }
+.tutorial-coach p { margin: 4px 0 0; color: #e6dcc6; font-size: 13px; line-height: 1.5; }
+.tutorial-rich { word-break: keep-all; }
+.reaction-text.tutorial-rich { font-size: clamp(18px, 1.8vw, 24px); text-align: center; }
+.tutorial-rich .how-em { color: #f3c86c; font-style: normal; font-weight: 700; white-space: nowrap; }
+.tutorial-rich .how-warn { color: #ff7a7f; font-style: normal; font-weight: 700; white-space: nowrap; }
+.tutorial-rich .how-key { display: inline-block; margin: 0 2px; padding: 0 7px; border: 1px solid #c5a95d; border-bottom-width: 3px; background: #24202a; color: #f3d683; font-family: var(--font-ui); font-size: 0.85em; line-height: 1.5; }
+.tutorial-replay { width: auto; white-space: nowrap; }
+.howto-actions { margin-top: 2px; }
+
+@media (max-width: 620px) {
+  .briefing-scene { top: 35px; gap: 8px; padding: 8px 8px 28px; }
+  .briefing-side { gap: 6px; padding: 8px; }
+  .briefing-menu { gap: 5px; }
+  .briefing-menu button { min-height: 32px; font-size: 13px; }
+  .briefing-box { min-height: 64px; padding: 6px 8px; }
+  .briefing-box p { font-size: 12px; }
+  .briefing-nameplate { bottom: 6px; left: 6px; padding: 5px 8px; }
+  .briefing-nameplate small { font-size: 11px; }
+  .briefing-head p, .briefing-head span { font-size: 11px; }
+  .briefing-hint { bottom: 6px; font-size: 11px; }
+  .intro-screen { top: 35px; }
+  .intro-portrait { width: 46vw; }
+  .tutorial-bar { right: 10px; left: 10px; font-size: 11px; }
+  .tutorial-bar span:nth-child(2) { display: none; }
+  .tutorial-coach { top: 74px; right: 10px; left: 10px; width: auto; padding: 8px; }
+  .tutorial-coach p { font-size: 13px; }
+}

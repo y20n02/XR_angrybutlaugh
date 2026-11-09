@@ -1,0 +1,55 @@
+/* 대결 구도: 상대(왼쪽)와 플레이어 뒷모습(오른쪽 앞)을 상반신 크기로 함께 보여 줌 */
+.battle-plate { display: flex; align-items: center; gap: 14px; min-width: 0; padding: 7px 12px; border: 2px solid #e0c386; background: #171824e6; box-shadow: 3px 3px 0 #080911; }
+.plate-player { flex: 2; }
+.plate-opponent { flex: 1; order: -1; }
+.plate-name { flex: 0 0 auto; color: #f6e0af; font-size: clamp(15px, 1.3vw, 19px); font-weight: 700; }
+
+.play-scene .scene-background { filter: sepia(0.6) brightness(0.6) contrast(0.95); }
+
+.play-scene .stage-character { top: 9%; right: auto; bottom: 0; left: 4%; width: 46%; height: auto; transform: none; }
+.play-scene .stage-character.character-emphasis { transform: none; }
+/* 원본이 전신 그림이라 크게 확대해서 머리~가슴만 보이게 함 */
+.portrait.office { --bust-top: -13%; }
+.portrait.team { --bust-top: 0%; }
+.portrait.shop { --bust-top: 2%; }
+.play-scene .stage-character .portrait:not(.portrait-small).has-art .portrait-art { inset: var(--bust-top) auto auto -73%; width: 246%; max-width: none; height: 246%; object-position: center top; }
+.play-scene .stage-character .portrait-shadow, .play-scene .stage-character .portrait-glint { display: none; }
+
+.player-back { position: absolute; z-index: 3; top: 30%; right: 8%; width: 27%; pointer-events: none; filter: drop-shadow(-5px 6px 0 #0b0a1488); }
+.player-back svg { display: block; width: 100%; height: auto; }
+.mood-angry .player-back, .mood-smirk .player-back { animation: player-flinch 320ms steps(4) 1; }
+.mood-surprised .player-back, .mood-defeated .player-back { animation: player-step 360ms steps(4) 1; }
+.stare-overlay .player-back { z-index: 1; }
+@keyframes player-flinch { 25% { transform: translateX(-7px); } 75% { transform: translateX(7px); } }
+@keyframes player-step { 50% { transform: translate(-8px, -8px) scale(1.03); } }
+
+/* 상대 대사는 인물을 가리지 않게 오른쪽 위에 표시 */
+.battle-taunt { position: absolute; z-index: 9; top: 15%; right: 3%; width: 44%; margin: 0; color: #fff; font-family: var(--font-read); font-size: clamp(20px, 2.3vw, 32px); font-weight: 700; line-height: 1.4; text-align: right; text-shadow: 2px 2px 0 #17131b, 0 0 14px #000; word-break: keep-all; animation: dialogue-reveal 950ms steps(40, end) both; }
+.play-scene .dialog-panel { background: #171824dd; }
+.play-scene .dialog-panel:not(.reaction-panel) { min-height: 0; padding: 8px 18px 6px; }
+.play-scene .dialog-panel .prompt-row { margin: 4px 0 6px; padding-top: 6px; padding-bottom: 6px; }
+
+@media (min-width: 901px) {
+  .stare-overlay .stare-portrait { top: 9%; right: auto; bottom: 0; left: 4%; width: 46%; height: auto; opacity: 1; transform: none; }
+  .stare-overlay .stare-portrait .has-art .portrait-art { inset: var(--bust-top) auto auto -73%; width: 246%; max-width: none; height: 246%; object-position: center top; }
+  .stare-overlay .stare-portrait .portrait-shadow, .stare-overlay .stare-portrait .portrait-glint { display: none; }
+  /* 카드가 두 인물의 얼굴을 가리지 않게 낮고 작게 */
+  .stare-overlay .stare-card { padding: 12px 24px; margin-bottom: 2%; }
+  .stare-overlay .stare-card h2 { margin-bottom: 4px; font-size: clamp(22px, 2.6vw, 32px); }
+  .stare-overlay .stare-card > p { margin: 4px 0; }
+  .stare-overlay .stare-card .event-kicker { margin-bottom: 4px; }
+  .stare-overlay .stare-card .stare-meter { margin: 10px 0 5px; }
+  .stare-overlay .stare-card .stare-meta { margin-bottom: 8px; }
+}
+
+@media (max-width: 900px) {
+  .stare-overlay .player-back { display: none; }
+}
+
+@media (max-width: 620px) {
+  .battle-plate { gap: 6px; padding: 4px 6px; }
+  .plate-name { display: none; }
+  .play-scene .stage-character { top: 15%; left: 0; width: 56%; }
+  .player-back { top: 34%; right: 2%; width: 42%; }
+  .battle-taunt { top: 14%; width: 46%; font-size: 14px; }
+}
