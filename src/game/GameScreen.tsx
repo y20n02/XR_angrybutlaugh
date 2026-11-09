@@ -9,6 +9,12 @@ import PlayerBack from "./PlayerBack";
 import IntroScreen from "./IntroScreen";
 import TutorialScreen from "./TutorialScreen";
 import BriefingScreen from "./BriefingScreen";
+import TitleScreen from "./TitleScreen";
+import MapScreen, { MapCloseup } from "./MapScreen";
+import "./play-theme.css";
+import { opponentName, setPlayerGender } from "./maps";
+import type { Gender } from "./maps";
+import PlayerSelect from "./PlayerSelect";
 
 /* TUNABLES CONTRACT — read before editing this file.
    1. Gameplay and UI constants live in DebugPanel.define below; read T.* where used.
@@ -148,9 +154,11 @@ const stareGoalFor = (level: number) => level === 0 ? T.minigame.stareGoal : lev
 const stareSecondsFor = (level: number) => level === 0 ? T.minigame.stareSeconds : level === 1 ? T.minigame.stareSecondsNormal : T.minigame.stareSecondsHard;
 const INTERNAL = { storageKey: "time-to-get-mad-save-v1", secondsPerMinute: 60, millisecondsPerSecond: 1000, typingUnit: 5, frameClampSeconds: 0.05, renderThrottleMs: 80, percentMax: 100, feverStartY: -14 };
 const TUTORIAL_STORAGE_KEY = "time-to-get-mad-tutorial-v1";
+const LAST_MAP_KEY = "time-to-get-mad-last-map-v1";
+const PLAYER_KEY = "time-to-get-mad-player-v1";
 const SCENARIO_IDS = ["office", "team", "shop"] as const;
 type ScenarioId = (typeof SCENARIO_IDS)[number];
-type Screen = "intro" | "tutorial" | "briefing" | "title" | "howto" | "scenarios" | "difficulty" | "play" | "ending" | "collection";
+type Screen = "intro" | "tutorial" | "briefing" | "title" | "select" | "map" | "howto" | "scenarios" | "difficulty" | "play" | "ending" | "collection";
 type Mode = "typing" | "reaction" | "calm" | "stare" | "fever";
 type Ending = "win" | "over" | "night" | "blanket" | "done";
 type Face = "NORMAL" | "SMILE" | "SMIRK" | "ANNOYED" | "SURPRISED" | "ANGRY" | "DEFEATED";
@@ -254,12 +262,13 @@ function getDeadline(session: Session) {
   return session.mode === "fever" ? (Text.scenarios as any)[session.scenario].levels[session.level].fever[session.feverIndex] : "";
 }
 
-function Portrait({ kind, face, small = false }: { kind: string; face: Face; small?: boolean }) {
-  const artUrl = (Assets as any).characters[kind]?.url;
+function Portrait({ kind, face, small = false, level = 0 }: { kind: string; face: Face; small?: boolean; level?: number }) {
+  /* 레벨별 그림(office-1 등)이 assets.json에 있으면 그걸, 없으면 상황 기본 그림(office)을 씀 */
+  const artUrl = (Assets as any).characters[`${kind}-${level}`]?.url ?? (Assets as any).characters[kind]?.url;
   const [imageFailed, setImageFailed] = useState(false);
   const showArt = Boolean(artUrl) && !imageFailed;
   return (
-    <div className={`portrait ${kind} ${showArt ? "has-art" : ""} ${small ? "portrait-small" : ""} face-${face.toLowerCase()}`} aria-label={`${Text.ui.opponent} ${Text.ui.moodNames[face]}`}>
+    <div className={`portrait ${kind} lv-${level} ${showArt ? "has-art" : ""} ${small ? "portrait-small" : ""} face-${face.toLowerCase()}`} aria-label={`${Text.ui.opponent} ${Text.ui.moodNames[face]}`}>
       <div className="portrait-shadow" />
       {showArt ? <img className="portrait-art" src={artUrl} alt="" onError={() => setImageFailed(true)} /> : <>
         <div className="character-body"><i className="neck" /><i className="shirt" /><i className="lapel left" /><i className="lapel right" /></div>
@@ -277,11 +286,19 @@ function Portrait({ kind, face, small = false }: { kind: string; face: Face; sma
 function GameScreen() {
   const [screen, setScreen] = useState<Screen>("intro");
   const [tutorialDone, setTutorialDone] = useState(loadTutorialDone);
-  const [tutorialReturn, setTutorialReturn] = useState<Screen>("scenarios");
+  const [tutorialReturn, setTutorialReturn] = useState<Screen>("map");
   const [briefingLevel, setBriefingLevel] = useState(0);
   const introFrameRef = useRef<((dt: number) => void) | null>(null);
   const [ending, setEnding] = useState<Ending>("over");
-  const [selectedScenario, setSelectedScenario] = useState<ScenarioId>("office");
+  /* 마지막으로 있던 맵을 기억 → 다시 켜도 타이틀 배경과 시작 맵이 그 맵 */
+  const [selectedScenario, setSelectedScenario] = useState<ScenarioId>(() => {
+    try { const stored = localStorage.getItem(LAST_MAP_KEY); return SCENARIO_IDS.includes(stored as ScenarioId) ? stored as ScenarioId : "office"; } catch { return "office"; }
+  });
+  useEffect(() => { try { localStorage.setItem(LAST_MAP_KEY, selectedScenario); } catch { /* 저장 실패해도 진행에는 영향 없음 */ } }, [selectedScenario]);
+  /* 고른 주인공(f/m) — 처음 GAME START 때 고름. 맵 도트 색·대결 뒷모습에 반영 */
+  const [playerGender, setPlayerGenderState] = useState<Gender | null>(() => { try { const g = localStorage.getItem(PLAYER_KEY); return g === "f" || g === "m" ? g : null; } catch { return null; } });
+  if (playerGender) setPlayerGender(playerGender);
+  const pickPlayer = (gender: Gender) => { setPlayerGender(gender); setPlayerGenderState(gender); try { localStorage.setItem(PLAYER_KEY, gender); } catch { /* 저장 실패해도 진행 가능 */ } if (tutorialDone) setScreen("map"); else openTutorial("map"); };
   const [save, setSave] = useState<SaveData>(loadSave);
   const [session, setSession] = useState<Session | null>(null);
   const [typedTarget, setTypedTarget] = useState("");
@@ -393,7 +410,7 @@ function GameScreen() {
 
   /* [추가 인트로·튜토리얼] 튜토리얼을 아직 안 봤으면 GAME START 때 먼저 보여 줌 */
   const openTutorial = (returnTo: Screen) => { setTutorialReturn(returnTo); setScreen("tutorial"); };
-  const startGame = () => { if (tutorialDone) setScreen("scenarios"); else openTutorial("scenarios"); };
+  const startGame = () => { if (!playerGender) setScreen("select"); else if (tutorialDone) setScreen("map"); else openTutorial("map"); };
   const finishTutorial = () => {
     setTutorialDone(true);
     try { localStorage.setItem(TUTORIAL_STORAGE_KEY, "done"); } catch { /* Saving is optional; the tutorial just shows again. */ }
@@ -615,8 +632,7 @@ function GameScreen() {
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.code === "Escape" && screenRef.current === "play") { setScreen("scenarios"); return; }
-      if (event.code === "Enter" && !event.repeat && screenRef.current === "title") { startGame(); return; }
+      if (event.code === "Escape" && screenRef.current === "play") { setScreen("map"); return; }
       /* [수정 김홍경 11/03] 반응 대사 화면에서 Enter로 '다음 대화' 진행 (마우스 클릭 없이)
          - 길게 누를 때 반복 입력(repeat)과 한글 조합 중 Enter, 입력창에서 이미 처리한 Enter는 무시해서
            반박 문장을 전송한 Enter가 반응 대사까지 건너뛰지 않게 함 */
@@ -686,7 +702,7 @@ function GameScreen() {
 
   return (
     <main className="game-shell">
-      <div className="screen-frame" data-ui>
+      <div className={`screen-frame${screen === "title" || screen === "map" || screen === "intro" ? " is-fullbleed" : ""}`} data-ui>
         <div className="screen-scanlines" />
         <header className="top-strip">
           <span className="brand-mark">{Text.title}</span>
@@ -697,18 +713,13 @@ function GameScreen() {
         {screen === "intro" && <IntroScreen T={T} frameRef={introFrameRef} Portrait={Portrait} onTone={playTone} onDone={() => setScreen("title")} />}
         {screen === "tutorial" && <TutorialScreen T={T} frameRef={introFrameRef} kit={{ Portrait, Meter, TypingPreview, countErrors, renderHowText }} onTone={playTone} onFinish={finishTutorial} />}
 
-        {screen === "briefing" && <BriefingScreen scenarioId={selectedScenario} level={briefingLevel} Portrait={Portrait} onTone={playTone} onStart={() => startScenario(selectedScenario, briefingLevel)} onBack={() => setScreen("difficulty")} />}
+        {screen === "briefing" && <BriefingScreen scenarioId={selectedScenario} level={briefingLevel} Portrait={Portrait} onTone={playTone} onStart={() => startScenario(selectedScenario, briefingLevel)} onBack={() => setScreen("map")} />}
 
-        {screen === "title" && <section className="title-screen">
-          <div className="title-backdrop"><div className="neon-window"><span>{Text.ui.titleWindow}</span><i /></div><div className="cityline" /></div>
-          <div className="title-copy"><p className="eyebrow">{Text.ui.titleEyebrow}</p><h1>{Text.title}</h1><p className="title-sub">「{Text.subtitle}」</p><div className="title-rule"><span /></div></div>
-          <div className="title-menu" data-ui>
-            <button className="menu-button primary" onClick={startGame}>{Text.ui.start}<span>▶</span></button>
-            <button className="menu-button" onClick={() => setScreen("howto")}>{Text.ui.howTo}</button>
-            <button className="menu-button" onClick={() => setScreen("collection")}>{Text.ui.collection}<span className="collection-count">{Object.keys(save.certificates).length}/3</span></button>
-          </div>
-          <div className="title-footer"><span className="title-footer-brand">{Text.ui.titleFooterLeft}</span>{/* [수정 김홍경 11/03] 왼쪽 아래 팀 이름 HONGIL.DOT (제목과 같은 폰트) */}<span>{Text.ui.titleFooterCenter}</span><span>{Text.ui.version}</span></div>
-        </section>}
+        {screen === "title" && <TitleScreen mapId={selectedScenario} collectionCount={Object.keys(save.certificates).length} soundOn={soundOn} onToggleSound={() => setSoundOn((value) => !value)} onStart={startGame} onHowTo={() => setScreen("howto")} onCollection={() => setScreen("collection")} onTone={playTone} />}
+
+        {screen === "select" && <PlayerSelect initial={playerGender} onPick={pickPlayer} onBack={() => setScreen("title")} onTone={playTone} />}
+
+        {screen === "map" && <MapScreen mapId={selectedScenario} save={save} onChangeMap={(id) => setSelectedScenario(id as ScenarioId)} onTalk={(id, level) => { setSelectedScenario(id as ScenarioId); setBriefingLevel(level); setScreen("briefing"); }} onTitle={() => setScreen("title")} onTone={playTone} />}
 
         {screen === "howto" && <section className="menu-scene howto-scene">
           <h2 className="scene-heading">{Text.ui.howTitle}</h2><div className="howto-panel pixel-panel">
@@ -749,21 +760,21 @@ function GameScreen() {
         </section>}
 
         {screen === "play" && session && <section className={`play-scene play-${session.mode} mood-${session.face.toLowerCase()} char-${character}`}>
-          <div className="scene-background" />
+          <div className="scene-background"><MapCloseup mapId={session.scenario} level={session.level} /></div>
           <div className="scene-meta"><span>{runningScenario.setting}</span><span>{Text.ui.round.replace("{current}", String(roundNumber)).replace("{total}", String(levelRoundCount(session.level)))}</span></div>
           <div className="hud-bars"><div className="battle-plate plate-player"><span className="plate-name">{Text.battle.player}</span>
             <Meter label={Text.ui.anger} value={session.anger} max={T.advanced.angerMax} type="anger" />
-            <Meter label={Text.ui.social} value={session.social} max={T.advanced.socialMax} type="social" /></div><div className="battle-plate plate-opponent"><span className="plate-name">{runningScenario.opponent}</span>
+            <Meter label={Text.ui.social} value={session.social} max={T.advanced.socialMax} type="social" /></div><div className="battle-plate plate-opponent"><span className="plate-name">{session ? opponentName(session.scenario, session.level) : runningScenario.opponent}</span>
             <Meter label={Text.ui.mental} value={session.mental} max={T.advanced.mentalMax} type="mental" /></div>
           </div>
-          <PlayerBack kind={character} />
+          <PlayerBack kind={character} gender={playerGender} />
           <div className={`stage-character ${session.mode === "stare" ? "character-emphasis" : ""}`}>
-            <Portrait key={character} kind={character} face={session.face} small={session.mode === "fever"} />
+            <Portrait key={`${character}-${session.level}`} kind={character} level={session.level} face={session.face} small={session.mode === "fever"} />
             {/* 상대 이름표는 위쪽 게이지 패널(plate-opponent)로 옮김 */}
           </div>
-          {session.mode === "typing" && <p key={session.roundIndex} className="battle-taunt">“{currentRound.taunt}”</p>}
+          {session.mode === "typing" && <p key={session.roundIndex} className="battle-taunt"><span>“{currentRound.taunt}”</span></p>}
           {session.mode === "typing" && <div className="dialog-panel pixel-panel">
-            <div className="dialog-name"><span>{runningScenario.opponent}</span><i>{Text.ui.moodNames[session.face]}</i></div>
+            <div className="dialog-name"><span>{session ? opponentName(session.scenario, session.level) : runningScenario.opponent}</span><i>{Text.ui.moodNames[session.face]}</i></div>
             {/* 상대 대사는 인물이 보이도록 대화창 위(battle-taunt)로 옮김 */}
             <div className="prompt-row"><span className="prompt-label">{Text.ui.target}</span><span className="prompt-sentence">{currentRound.target}</span></div>
             {/* [수정 김홍경 11/03] 시작 전에는 입력창 대신 시작 버튼을 보여 줌 (시간이 흐르지 않음) */}
@@ -783,7 +794,7 @@ function GameScreen() {
           </div>}
 
           {session.mode === "reaction" && <div className="dialog-panel reaction-panel pixel-panel">
-            <div className="dialog-name"><span>{runningScenario.opponent}</span><i>{Text.ui.moodNames[session.face]}</i></div>
+            <div className="dialog-name"><span>{session ? opponentName(session.scenario, session.level) : runningScenario.opponent}</span><i>{Text.ui.moodNames[session.face]}</i></div>
             <p className="reaction-text">{session.feedback}</p>
             <div className="reaction-controls"><span>{Text.ui.curseCount.replace("{count}", String(session.curses))}</span><button className="action-button" onClick={continueReaction}>{Text.ui.next} <b>↵</b>{/* [수정 김홍경 11/03] Enter로 넘어간다는 표시: ▶ → ↵ */}</button></div>
           </div>}
@@ -796,7 +807,7 @@ function GameScreen() {
             {calmMessage && <p className="inline-feedback">{calmMessage}</p>}
           </div></div>}
 
-          {session.mode === "stare" && <div className="minigame-shade stare-overlay"><div className="stare-backdrop">{Text.ui.stareBackdrop}</div><div className="stare-portrait"><Portrait key={character} kind={character} face="ANGRY" /></div><PlayerBack kind={character} /><div className="minigame-card stare-card pixel-panel">
+          {session.mode === "stare" && <div className="minigame-shade stare-overlay"><div className="stare-backdrop">{Text.ui.stareBackdrop}</div><div className="stare-portrait"><Portrait key={`${character}-${session.level}`} kind={character} level={session.level} face="ANGRY" /></div><PlayerBack kind={character} gender={playerGender} /><div className="minigame-card stare-card pixel-panel">
             <p className="event-kicker">{Text.ui.stareEventKicker}</p><h2>{Text.ui.stareTitle}</h2><p>{Text.ui.stareHelp.replace("{seconds}", String(stareSecondsFor(session.level))).replace("{goal}", String(stareGoalFor(session.level)))}</p><div className="stare-meter"><i style={{ width: `${Math.min(100, session.stareGauge / stareGoalFor(session.level) * 100)}%` }} /></div>
             <div className="stare-meta"><span>{Text.ui.stareMeter}</span><b>{session.stareGauge} / {stareGoalFor(session.level)}</b><strong>{session.stareRemaining.toFixed(1)}″</strong></div>
             {/* [수정 김홍경 11/03] 기싸움도 시작 버튼을 눌러야 5초가 흐름 */}
@@ -824,7 +835,7 @@ function GameScreen() {
             <p className="eyebrow">{Text.ui.goodBye}</p><h1>{Text.ui.clearTitle}</h1><h2>「{Text.ui.clearSub}」</h2><p className="ending-quote">{Text.ui.happyLine}</p>
             <div className="result-grid"><Stat label={Text.ui.accuracy} value={`${displayedAccuracy}%`} /><Stat label={Text.ui.speed} value={Text.ui.wpm.replace("{value}", String(averageWpm))} /><Stat label={Text.ui.social} value={`${session.social}`} /><Stat label={Text.ui.anger} value={`${session.anger}`} /><Stat label={`${Text.ui.feverResult} / ${Text.ui.stareResult}`} value={`${session.feverWon ? Text.ui.won : Text.ui.notWon} / ${session.stareWon ? Text.ui.won : Text.ui.notWon}`} /><Stat label={Text.ui.rating} value={titleCaseRank(session)} /></div>
             {session.level === 2 && <div className="certificate-toast">✦ {Text.ui.certificate} — {(Text.scenarios as any)[session.scenario].certificate}</div>}
-            <p className="final-line">{Text.ui.finalLine}</p><div className="ending-actions"><button className="action-button" onClick={() => setScreen("scenarios")}>{Text.ui.select}</button><button className="text-button" onClick={() => setScreen("title")}>{Text.ui.toTitle}</button></div>
+            <p className="final-line">{Text.ui.finalLine}</p><div className="ending-actions"><button className="action-button" onClick={() => setScreen("map")}>{Text.ui.toMap}</button><button className="text-button" onClick={() => setScreen("title")}>{Text.ui.toTitle}</button></div>
           </div>}
           {ending === "over" && <div className="ending-content over-content pixel-panel"><p className="eyebrow">{Text.ui.overKicker}</p><h1>{Text.ui.overline}</h1><h2>「{Text.ui.overSub}」</h2><p className="over-reason">{session.curses >= T.advanced.curseLimit ? Text.ui.curseCount.replace("{count}", String(session.curses)) : session.anger >= T.advanced.angerMax ? Text.ui.anger : Text.ui.social}</p><button className="action-button" onClick={beginBlanket}>{Text.ui.next} ▶</button></div>}
           {ending === "night" && <div className="night-narrative"><p>{Text.ui.badIntro}</p><h2>「{Text.ui.nightThought}」</h2><button className="action-button" onClick={() => { setEnding("blanket"); setBlanketInput(""); setBlanketFeedback(""); setBlanketRemaining(T.advanced.blanketSeconds); }}>{Text.ui.blanketTitle} ▶</button></div>}
@@ -844,7 +855,7 @@ function GameScreen() {
         </section>}
         <div className="frame-corner corner-tl" /><div className="frame-corner corner-tr" /><div className="frame-corner corner-bl" /><div className="frame-corner corner-br" />
       </div>
-      <div className="keyboard-hint">{Text.ui.tip}</div>
+      {screen !== "title" && screen !== "map" && screen !== "intro" && <div className="keyboard-hint">{Text.ui.tip}</div>}
     </main>
   );
 }

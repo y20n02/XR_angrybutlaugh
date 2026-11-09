@@ -15,6 +15,19 @@
       "url": "https://agent8-games.verse8.io/0x985966fb2f9fcef8d1f859ba003d12a1e305873b/mcp-uploads/static-assets/character-1791966105461.png",
       "description": "Retro anime bust portrait of an impatient customer wearing a dark olive jacket.",
       "metadata": { "style": "anime", "transparent": true, "scenario": "shop" }
-    }
+    },
+    "office-0": { "url": "characters/office-0.webp", "description": "회사 하 · 동기" },
+    "office-1": { "url": "characters/office-1.webp", "description": "회사 중 · 대리" },
+    "office-2": { "url": "characters/office-2.webp", "description": "회사 상 · 선임" },
+    "team-0": { "url": "characters/team-0.webp", "description": "학교 하 · 후드 남학생" },
+    "team-1": { "url": "characters/team-1.webp", "description": "학교 중 · 금발 여학생" },
+    "team-2": { "url": "characters/team-2.webp", "description": "학교 상 · 안경 남학생" },
+    "shop-0": { "url": "characters/shop-0.webp", "description": "카페 하 · 커플 진상" },
+    "shop-1": { "url": "characters/shop-1.webp", "description": "카페 중 · 아줌마" },
+    "shop-2": { "url": "characters/shop-2.webp", "description": "카페 상 · 아저씨" }
+  },
+  "players": {
+    "f": { "front": "characters/player-f-front.webp", "back": "characters/player-f-back.webp", "description": "여자 주인공" },
+    "m": { "front": "characters/player-m-front.webp", "back": "characters/player-m-back.webp", "description": "남자 주인공" }
   }
 }

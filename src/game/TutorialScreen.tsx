@@ -176,7 +176,7 @@ function TutorialScreen({ T, frameRef, kit, onTone, onFinish }: TutorialProps) {
       </div>}
 
       {step === "typing" && phase !== "result" && <>
-        <p className="battle-taunt">“{Text.tutorial.typingTaunt}”</p>
+        <p className="battle-taunt"><span>“{Text.tutorial.typingTaunt}”</span></p>
         <aside className="tutorial-coach pixel-panel"><b>{Text.tutorial.coachName}</b><p className="tutorial-rich">{renderHowText(phase === "ready" ? Text.tutorial.typingReady : Text.tutorial.typingActive)}</p></aside>
         <div className="dialog-panel pixel-panel">
           <div className="dialog-name"><span>{Text.tutorial.opponent}</span><i>{Text.tutorial.practice}</i></div>

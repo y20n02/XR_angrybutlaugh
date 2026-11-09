@@ -1,0 +1,181 @@
+/* 게임 UI 테마 — 인트로(90년대 PC 비주얼노벨)와 같은 라벤더·남색 픽셀 스타일.
+   game.css / battle-layout.css 의 색만 덮어씁니다. 색을 바꾸려면 아래 변수만 고치면 됩니다. */
+:root {
+  --ui-ink: #14122e;        /* 외곽선 */
+  --ui-panel: #0b0a1cf2;    /* 창 배경 */
+  --ui-panel-2: #1a1830;
+  --ui-frame: #c3bbec;      /* 은빛 테두리 */
+  --ui-frame-light: #f1edff;
+  --ui-frame-mid: #9289d6;
+  --ui-frame-dark: #4b4196;
+  --ui-text: #f4f1ff;
+  --ui-muted: #a9a2cf;
+  --ui-gold: #ffd84a;
+  --ui-pink: #ff8ad8;
+  --ui-red: #ff6b7a;
+}
+
+/* 화면 틀·위쪽 바 */
+.game-shell { background: radial-gradient(ellipse at 50% 42%, #2b2a5a 0%, #14122e 65%, #0b0a1c 100%); }
+.screen-frame { border-color: var(--ui-frame); background: var(--ui-panel-2); box-shadow: 0 0 0 3px var(--ui-ink), 0 0 0 6px var(--ui-frame-dark), 0 22px 90px #000b; }
+.top-strip { border-bottom: 3px solid var(--ui-ink); background: linear-gradient(180deg, var(--ui-frame-light), var(--ui-frame) 60%, var(--ui-frame-mid)); color: var(--ui-ink); box-shadow: 0 3px 0 var(--ui-frame-dark); }
+.brand-mark { color: var(--ui-ink); }
+.top-center { color: var(--ui-frame-dark); font-weight: 700; }
+.sound-toggle { color: var(--ui-ink); }
+.sound-toggle span { color: var(--ui-frame-dark); }
+.frame-corner { border-color: var(--ui-gold) !important; }
+.keyboard-hint { color: var(--ui-muted); }
+
+/* 공통 창: 남색 바탕 + 검은 외곽선 + 은빛 테두리 두 겹 */
+.pixel-panel {
+  border: 3px solid var(--ui-ink);
+  outline: 0;
+  background: var(--ui-panel);
+  box-shadow: 0 0 0 3px var(--ui-frame), 0 0 0 6px var(--ui-ink), 0 0 0 8px var(--ui-frame-dark), 8px 10px 0 6px #0a082066;
+}
+
+/* 버튼 */
+.menu-button, .action-button, .submit-button {
+  border: 3px solid var(--ui-ink);
+  background: linear-gradient(180deg, var(--ui-frame-light), var(--ui-frame) 55%, var(--ui-frame-mid));
+  box-shadow: inset 0 -3px 0 var(--ui-frame-dark), 3px 3px 0 var(--ui-ink);
+  color: var(--ui-ink);
+}
+.menu-button:hover, .action-button:hover, .submit-button:hover { background: linear-gradient(180deg, #ffffff, var(--ui-frame-light) 55%, var(--ui-frame)); color: var(--ui-ink); }
+.menu-button.primary, .submit-button { border-color: var(--ui-ink); background: linear-gradient(180deg, #fff3b0, var(--ui-gold) 55%, #e0a92a); color: var(--ui-ink); box-shadow: inset 0 -3px 0 #b8862a, 3px 3px 0 var(--ui-ink); }
+.text-button { color: var(--ui-frame); }
+button:focus-visible, input:focus-visible { outline-color: var(--ui-gold); }
+
+/* 대결 화면 배경: 상대가 있는 맵을 확대해서 어둡게 */
+.play-scene { background: var(--ui-panel-2); }
+.play-scene .scene-background { overflow: hidden; background: var(--ui-panel-2); filter: none; }
+.play-scene .scene-background::before, .play-scene .scene-background::after { display: none; }
+.play-scene .scene-background .map-closeup { top: 55%; width: 200%; }
+.play-scene .scene-background .map-canvas { filter: brightness(0.5) saturate(0.8); }
+.play-scene .scene-background::selection { background: none; }
+.scene-meta { color: var(--ui-frame); text-shadow: 2px 2px 0 var(--ui-ink); }
+
+/* 위쪽 게이지 패널 */
+.battle-plate { border: 3px solid var(--ui-ink); background: var(--ui-panel); box-shadow: 0 0 0 2px var(--ui-frame), 0 0 0 4px var(--ui-ink), 4px 5px 0 4px #0a082066; }
+.plate-name { color: var(--ui-gold); text-shadow: 2px 2px 0 var(--ui-ink); }
+.meter > div { color: var(--ui-muted); }
+.meter > div b { color: var(--ui-text); }
+.meter > div small { color: var(--ui-frame-mid); }
+.meter > i { height: 12px; border: 2px solid var(--ui-ink); background: var(--ui-panel-2); box-shadow: 0 0 0 1px var(--ui-frame-mid); }
+.meter-anger > i em { background: repeating-linear-gradient(90deg, #ff6b7a 0 6px, #ff4d64 6px 8px); }
+.meter-social > i em { background: repeating-linear-gradient(90deg, #8be0b0 0 6px, #5cc48f 6px 8px); }
+.meter-mental > i em { background: repeating-linear-gradient(90deg, var(--ui-pink) 0 6px, #d660b4 6px 8px); }
+.meter-anger:has(em[style*="100%"]) > i { box-shadow: 0 0 0 1px var(--ui-frame-mid), 0 0 13px var(--ui-red); }
+
+/* 상대 대사 (인물 옆) */
+.battle-taunt { color: var(--ui-text); text-shadow: 3px 3px 0 var(--ui-ink), -1px -1px 0 var(--ui-ink), 1px -1px 0 var(--ui-ink), -1px 1px 0 var(--ui-ink); }
+
+/* 대화창 */
+.play-scene .dialog-panel { background: var(--ui-panel); }
+.dialog-name { color: var(--ui-gold); }
+.dialog-name span::before { content: "【"; }
+.dialog-name span::after { content: "】"; }
+.dialog-name i { color: var(--ui-muted); }
+.prompt-row { border: 3px solid var(--ui-ink); border-left-width: 3px; background: var(--ui-panel-2); box-shadow: 0 0 0 2px var(--ui-frame-mid); }
+.prompt-label { background: var(--ui-gold); color: var(--ui-ink); }
+.prompt-sentence { color: var(--ui-text); text-shadow: 2px 2px 0 var(--ui-frame-dark); }
+.timer-block { color: var(--ui-muted); }
+.timer-block b { color: var(--ui-gold); text-shadow: 2px 2px 0 var(--ui-ink); }
+.timer-block b.urgent { color: var(--ui-red); }
+.typing-form input, .fever-form input, .blanket-form input { border: 3px solid var(--ui-ink); background: #06051a; box-shadow: 0 0 0 2px var(--ui-frame-mid); color: var(--ui-text); }
+.typing-form input::placeholder, .fever-form input::placeholder, .blanket-form input::placeholder { color: #6a6496; }
+.typing-preview { color: var(--ui-muted); }
+.typing-preview .match { color: #8be0b0; }
+.typing-preview .mismatch { color: var(--ui-red); }
+.typing-preview .pending { color: #6a6496; }
+.typing-preview .composing { color: var(--ui-gold); }
+.typing-footer { color: var(--ui-pink); }
+.typing-footer span:last-child { color: var(--ui-muted); }
+.ready-hint { color: var(--ui-muted); }
+.reaction-text { color: var(--ui-text); }
+.reaction-controls { color: var(--ui-muted); }
+
+/* 미니게임 (진정·기싸움) */
+.minigame-shade { background: #0b0a1cd9; }
+.event-kicker { color: var(--ui-pink); }
+.minigame-card h2 { color: var(--ui-gold); text-shadow: 3px 3px 0 var(--ui-ink); }
+.minigame-card > p:not(.event-kicker) { color: var(--ui-muted); }
+.calm-dial { border: 3px solid var(--ui-ink); background: repeating-linear-gradient(90deg, var(--ui-panel-2) 0 9.5%, #2b2a5a 10%); box-shadow: 0 0 0 2px var(--ui-frame-mid); }
+.calm-zone { background: var(--ui-gold); box-shadow: 0 0 14px #ffd84a99; }
+.calm-needle { background: var(--ui-pink); box-shadow: 0 0 7px var(--ui-pink); }
+.stare-meter { border: 3px solid var(--ui-ink); background: var(--ui-panel-2); box-shadow: 0 0 0 2px var(--ui-frame-mid); }
+.stare-meter i { background: repeating-linear-gradient(90deg, var(--ui-pink) 0 6px, var(--ui-gold) 6px 8px); box-shadow: none; }
+
+/* 피버 */
+.fever-overlay { background: linear-gradient(180deg, #3a1f6ef2, #1a1830f8 34%, #14122ef7); }
+.fever-overlay::before { background: repeating-linear-gradient(135deg, transparent 0 25px, var(--ui-pink) 26px 28px, transparent 29px 47px); }
+.fever-top { color: var(--ui-gold); }
+.fever-top b, .fever-top i { color: var(--ui-text); }
+.fever-subtitle { color: var(--ui-pink); }
+.fever-lane { border: 3px solid var(--ui-ink); background: #0b0a1c66; box-shadow: 0 0 0 2px var(--ui-frame-mid); }
+.fever-bottom > p { color: var(--ui-muted); }
+.fever-feedback { color: var(--ui-red); }
+.ready-button { border-color: var(--ui-ink); background: linear-gradient(180deg, #fff3b0, var(--ui-gold) 55%, #e0a92a); color: var(--ui-ink); box-shadow: inset 0 -3px 0 #b8862a, 3px 3px 0 var(--ui-ink); }
+
+/* 새 캐릭터 그림(전부 같은 구도)에 맞춘 상반신 자르기 */
+.portrait.office, .portrait.team, .portrait.shop { --bust-top: -12%; }
+
+/* 주인공 뒷모습 그림 (대결 화면 오른쪽 앞) */
+.player-back.has-art { top: 26%; right: 4%; bottom: 0; width: 32%; overflow: hidden; filter: drop-shadow(-0.6cqh 0 0 var(--ui-ink)) drop-shadow(0.6cqh 0 0 var(--ui-ink)); }
+.player-back.has-art img { position: absolute; top: -12%; left: 50%; width: auto; max-width: none; height: 400%; aspect-ratio: 1; translate: -50% 0; user-select: none; }
+
+/* 주인공 선택 화면 */
+.select-scene { position: absolute; inset: 42px 0 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2.4%; container-type: size; background: radial-gradient(ellipse at 50% 45%, #2b2a5a, var(--ui-panel-2) 70%); }
+.select-scene h2 { margin: 0; color: var(--ui-gold); font-size: 5cqh; text-shadow: 0.4cqh 0.4cqh 0 var(--ui-ink); }
+.select-cards { display: flex; gap: 6cqh; height: 66%; }
+.select-card { position: relative; display: flex; flex-direction: column; align-items: center; width: 38cqh; padding: 1.5cqh; color: var(--ui-text); cursor: pointer; opacity: 0.6; transition: opacity 0.1s steps(2); }
+.select-card.selected { opacity: 1; transform: translateY(-1cqh); }
+.select-card.selected { box-shadow: 0 0 0 3px var(--ui-gold), 0 0 0 6px var(--ui-ink), 0 0 0 8px var(--ui-frame-dark), 8px 10px 0 6px #0a082066; }
+.select-art { position: relative; flex: 1; width: 100%; overflow: hidden; }
+/* 전신 그림을 크게 키워 상반신만 카드에 꽉 차게 (비율 유지) */
+.select-art img { position: absolute; top: -14cqh; left: 50%; width: 430%; max-width: none; height: auto; translate: -50% 0; user-select: none; }
+.select-card b { margin-top: 1cqh; font-size: 3cqh; }
+.select-hint { margin: 0; color: var(--ui-muted); font-size: 2.2cqh; }
+
+/* 인물 크게 + 외곽선(stroke)·그림자 없음 */
+.portrait, .vn-portrait .portrait, .player-back, .player-back.has-art { filter: none; }
+.portrait.office, .portrait.team, .portrait.shop { --bust-top: -15%; }
+.play-scene .stage-character { left: 2%; width: 50%; }
+.play-scene .stage-character .portrait:not(.portrait-small).has-art .portrait-art,
+.stare-overlay .stare-portrait .has-art .portrait-art { inset: var(--bust-top) auto auto -95%; width: 290%; height: 290%; }
+.player-back.has-art { top: 22%; width: 36%; }
+.player-back.has-art img { top: -14%; height: 470%; }
+.vn-portrait .has-art .portrait-art { top: -9%; height: 385%; }
+
+/* 인트로 인물이 말하며 들썩일 때 아래쪽 빈 틈이 보이지 않게, 장면 창 아래로 조금 더 길게 (창 밖은 가려짐) */
+.vn-portrait { inset: 0 0 -3cqh 0; }
+
+/* 상대 대사 말풍선: 상대(왼쪽) 얼굴 옆에 남색 상자 + 은빛 테두리, 꼬리가 상대를 가리킴 */
+.battle-taunt {
+  top: 17%; right: auto; left: 47%; width: 36%; padding: 1.8cqh 2.4cqh;
+  border: 3px solid var(--ui-ink); background: var(--ui-panel);
+  box-shadow: 0 0 0 3px var(--ui-frame-light), 0 0 0 6px var(--ui-ink), 6px 8px 0 4px #0a082066;
+  color: var(--ui-text); font-size: clamp(17px, 1.75vw, 25px); font-weight: 400; line-height: 1.5; text-align: left; text-shadow: none;
+  animation: bubble-in 0.2s steps(3) both;
+}
+.battle-taunt span { display: block; animation: dialogue-reveal 950ms steps(40, end) both; }
+.battle-taunt::before, .battle-taunt::after { position: absolute; top: 2.2cqh; content: ""; border-style: solid; }
+.battle-taunt::before { left: -2.6cqh; border-width: 1.5cqh 2.6cqh 1.5cqh 0; border-color: transparent var(--ui-frame-light) transparent transparent; }
+.battle-taunt::after { left: -1.6cqh; top: calc(2.2cqh + 0.6cqh); border-width: 0.9cqh 1.7cqh 0.9cqh 0; border-color: transparent var(--ui-panel-2) transparent transparent; }
+.play-scene, .tutorial-screen, .tutorial-scene { container-type: size; }
+@keyframes bubble-in { from { opacity: 0; transform: translateY(1cqh); } }
+
+/* 튜토리얼 '마음의 소리' 상자는 상대 말풍선 아래로 */
+@media (min-width: 621px) { .tutorial-coach { top: 41%; } }
+
+/* 커플 진상(카페 하)은 두 사람이 나란히 있어 그림이 넓음 → 덜 확대해서 두 사람 어깨까지 다 보이게 */
+.play-scene .stage-character .portrait.shop.lv-0:not(.portrait-small).has-art .portrait-art,
+.stare-overlay .stare-portrait .portrait.shop.lv-0.has-art .portrait-art { inset: -9% auto auto -60%; width: 220%; height: 220%; }
+.briefing-portrait .portrait.shop.lv-0.has-art .portrait-art { inset: -8% auto auto -55%; width: 210%; height: 210%; }
+.vn-portrait .portrait.shop.lv-0.has-art .portrait-art { top: -6%; height: 290%; }
+
+/* 상대 소개: 인물을 왼쪽 창이 꽉 차게 아주 크게 (얼굴~가슴) */
+.briefing-portrait { inset: 0; }
+.briefing-portrait .portrait { position: absolute; inset: 0; }
+.briefing-portrait .has-art .portrait-art { inset: -26% auto auto -195%; width: 490%; height: 490%; max-width: none; object-position: center top; }
+.briefing-portrait .portrait.shop.lv-0.has-art .portrait-art { inset: -16% auto auto -105%; width: 310%; height: 310%; }

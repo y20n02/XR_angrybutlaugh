@@ -1,0 +1,73 @@
+/* 상대 소개 화면 (BriefingScreen.tsx) — 90년대 PC 비주얼노벨 스타일
+   왼쪽: 인물이 꽉 차는 조명 배경 · 오른쪽: 철제 덩굴 장식 · 입체 회색 버튼 */
+.briefing-scene {
+  --iron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='200' viewBox='0 0 160 200' fill='none' stroke='%239d93e6' stroke-width='2.2' stroke-linecap='round' stroke-opacity='.55'%3E%3Cpath d='M80 0v200'/%3E%3Cpath d='M80 40c-30 0-46 18-46 40s16 34 32 34 24-10 24-22-8-18-18-18-14 6-14 12'/%3E%3Cpath d='M80 40c30 0 46 18 46 40s-16 34-32 34-24-10-24-22 8-18 18-18 14 6 14 12'/%3E%3Cpath d='M80 150c-22 0-40 14-40 30s10 20 20 20'/%3E%3Cpath d='M80 150c22 0 40 14 40 30s-10 20-20 20'/%3E%3Cpath d='M0 20c18 0 30 12 30 30S18 80 0 80'/%3E%3Cpath d='M160 20c-18 0-30 12-30 30s12 30 30 30'/%3E%3Cpath d='M0 120c24 0 34 16 34 30s-10 24-24 24'/%3E%3Cpath d='M160 120c-24 0-34 16-34 30s10 24 24 24'/%3E%3Ccircle cx='80' cy='132' r='4'/%3E%3Ccircle cx='80' cy='18' r='3'/%3E%3C/svg%3E");
+  background: #14122e;
+}
+
+/* 은빛 입체 테두리 (공통) */
+.briefing-frame, .briefing-side {
+  border: 4px solid;
+  border-color: #f1edff #6a62a8 #6a62a8 #f1edff;
+  outline: 3px solid #0b0a1c;
+  box-shadow: inset 0 0 0 2px #0b0a1c, 0 0 0 7px #4b4196, 0 0 0 9px #0b0a1c;
+}
+
+/* 왼쪽: 무늬 없이 인물 뒤로 은은한 조명 */
+.briefing-frame {
+  background:
+    radial-gradient(ellipse 70% 60% at 50% 38%, #8378dc 0%, #5348b0 38%, #2c2570 75%, #1a1550 100%);
+}
+.briefing-frame::after { position: absolute; z-index: 5; inset: 0; content: ""; background: linear-gradient(180deg, transparent 72%, #0b0a1c99 100%); pointer-events: none; }
+
+
+/* 오른쪽: 철제 덩굴 장식 */
+.briefing-side { background: var(--iron) center top / 128px 160px, radial-gradient(ellipse at 50% 40%, #3d3494, #231d63 75%); }
+.briefing-head p { color: #ffd84a; text-shadow: 2px 2px 0 #0b0a1c; }
+.briefing-head h2 { color: #ffffff; text-shadow: 3px 3px 0 #0b0a1c; }
+.briefing-head span { display: inline-block; margin-top: 4px; padding: 2px 10px; background: #0b0a1caa; color: #e4dffa; }
+
+/* 입체 회색 버튼 (고르면 눌린 모양 + ▶) */
+.briefing-menu { gap: 10px; }
+.briefing-menu button,
+.briefing-menu .briefing-start {
+  position: relative;
+  width: min(300px, 72%);
+  min-height: 46px;
+  border: 3px solid;
+  border-color: #ffffff #5c5878 #5c5878 #ffffff;
+  border-radius: 0;
+  background: linear-gradient(180deg, #e2dfec, #bdb9cf);
+  box-shadow: 0 0 0 2px #0b0a1c, 4px 4px 0 2px #0b0a1c88;
+  color: #14122e;
+  font-family: var(--font-ui);
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  animation: none;
+}
+.briefing-menu button:hover { background: linear-gradient(180deg, #f2f0f8, #cfcbe0); color: #14122e; }
+.briefing-menu button.selected {
+  border-color: #5c5878 #ffffff #ffffff #5c5878;
+  background: linear-gradient(180deg, #b3aec8, #d9d5e6);
+  color: #14122e;
+  transform: translate(2px, 2px);
+  box-shadow: 0 0 0 2px #0b0a1c, 2px 2px 0 2px #0b0a1c88;
+}
+.briefing-menu button.selected::before { position: absolute; left: 14px; content: "▶"; color: #c2489a; animation: briefing-blink 0.9s steps(1) infinite; }
+.briefing-menu .briefing-start { margin-top: 6px; color: #14122e; }
+.briefing-menu .briefing-start.selected { background: linear-gradient(180deg, #ffe58a, #f2c040); color: #14122e; animation: none; }
+
+/* 설명 상자: 흰 바탕 + 오목한 테두리 */
+.briefing-box { border: 3px solid; border-color: #5c5878 #ffffff #ffffff #5c5878; background: #fbfaff; box-shadow: 0 0 0 2px #0b0a1c, 4px 5px 0 2px #0b0a1c88; }
+.briefing-box p { color: #14122e; }
+.briefing-hint { color: #b9b2e0; }
+
+@keyframes briefing-blink { 50% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .briefing-menu button.selected::before { animation: none; } }
+
+/* 오른쪽 칸 맨 위: 상대 이름(크게)·역할·장소 */
+.briefing-head { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 12px 12px; border: 3px solid; border-color: #f1edff #6a62a8 #6a62a8 #f1edff; background: #14122ee6; box-shadow: 0 0 0 2px #0b0a1c, 4px 5px 0 2px #0b0a1c88; }
+.briefing-head h2 { color: #ffd84a; font-size: clamp(28px, 3.2vw, 42px); }
+.briefing-head strong { color: #ffffff; font-size: clamp(15px, 1.4vw, 19px); font-weight: 400; }
+.briefing-head span { margin-top: 2px; background: none; color: #b9b2e0; font-size: 13px; }

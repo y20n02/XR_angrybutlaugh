@@ -1,18 +1,39 @@
-/* 인트로 */
-.intro-screen { position: absolute; inset: 42px 0 0; overflow: hidden; cursor: pointer; background: #090a13; }
-.intro-shade { position: absolute; z-index: 1; inset: 0; background: #080910a8; transition: background 400ms steps(4); }
-.intro-taunt .intro-shade { background: radial-gradient(ellipse at 50% 45%, #562a32e0, #0a0911f5 72%); }
-.intro-finale .intro-shade { background: #080910e0; }
-.intro-portrait { position: absolute; z-index: 2; top: 6%; left: 50%; display: flex; flex-direction: column; align-items: center; width: min(300px, 26vw); height: 66%; transform: translateX(-50%); animation: intro-portrait-in 260ms steps(4) both; }
-.intro-portrait .portrait { flex: 1; min-height: 0; }
-.intro-portrait b { padding: 6px 14px; border: 1px solid #d2b770; background: #1c1b22e6; color: #f6e0af; font-size: 15px; }
-.intro-line { position: absolute; z-index: 3; top: 40%; right: 8%; left: 8%; margin: 0; color: #f4efdf; font-family: var(--font-read); font-size: clamp(22px, 2.6vw, 36px); line-height: 1.6; text-align: center; text-shadow: 2px 3px 0 #0a0911; word-break: keep-all; }
-.intro-taunt .intro-line { top: auto; bottom: 11%; color: #ffd9c2; font-size: clamp(20px, 2.2vw, 30px); }
-.intro-finale .intro-line { top: 36%; color: #fff2d2; font-family: var(--font-ui); font-size: clamp(36px, min(6vw, 10vh), 78px); font-weight: 700; letter-spacing: 0.08em; text-shadow: 4px 5px 0 #6e344a, 7px 8px 0 #17141f, 0 0 32px #ec9a6544; }
-.intro-ghost { visibility: hidden; }
-.intro-skip { position: absolute; z-index: 4; top: 8px; right: 16px; margin: 0; font-size: 16px; }
-.intro-hint { position: absolute; z-index: 4; right: 0; bottom: 34px; left: 0; color: #8f8576; font-size: 14px; letter-spacing: 0.08em; text-align: center; }
-@keyframes intro-portrait-in { from { opacity: 0; transform: translateX(-50%) translateY(14px); } to { opacity: 1; transform: translateX(-50%) translateY(0); } }
+/* 인트로 — 90년대 PC 비주얼노벨 스타일 (IntroScreen.tsx)
+   장식 기둥 + 가운데 장면 창 + 아래 대사창. 크기는 화면 틀 높이 기준(cqh) */
+.vn-screen {
+  position: absolute; inset: 0; container-type: size; overflow: hidden; cursor: pointer;
+  background: #1a1830; font-family: var(--font-read);
+}
+
+.vn-frame-art { position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; image-rendering: crisp-edges; }
+.vn-window, .vn-dialog { position: absolute; right: 13.5%; left: 13.5%; border: 0.6cqh solid #14122e; box-shadow: 0 0 0 0.6cqh #b9b0e6, 0 0 0 1.1cqh #14122e, 0 0 0 1.4cqh #4b4196; }
+.vn-window { top: 4.5%; height: 64%; overflow: hidden; background: #0f0d24; }
+.vn-scene { position: absolute; inset: 0; animation: vn-fade 0.35s steps(4) both; }
+.vn-scene::after { position: absolute; inset: 0; content: ""; background: repeating-linear-gradient(to bottom, transparent 0 2px, #0a082033 2px 3px); pointer-events: none; }
+.vn-room { position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; image-rendering: crisp-edges; }
+.vn-scene .map-canvas { filter: brightness(0.62) saturate(0.85); }
+/* 상대 초상화: 원본이 전신 그림이라 크게 키워서 가슴 위(상반신)만 보이게 */
+.vn-portrait { position: absolute; inset: 0; animation: vn-rise 0.3s steps(4) both; }
+.vn-portrait .portrait { position: absolute; inset: 0; }
+.vn-portrait.talking .portrait { animation: vn-talk 0.32s steps(2) infinite; }
+.vn-portrait .portrait { filter: drop-shadow(0.8cqh 0 0 #14122e) drop-shadow(-0.8cqh 0 0 #14122e); }
+.vn-portrait .portrait-shadow, .vn-portrait .portrait-glint { display: none; }
+.vn-portrait .has-art .portrait-art { inset: -5% auto auto 50%; width: auto; max-width: none; height: 330%; aspect-ratio: 1; translate: -50% 0; object-position: center top; }
+
+.vn-dialog { top: 75%; bottom: 4.5%; padding: 2.2cqh 3.4cqh; background: #0b0a1c; }
+.vn-dialog p { margin: 0; color: #f4f1ff; font-size: 3.6cqh; line-height: 1.6; word-break: keep-all; text-shadow: 0.3cqh 0.3cqh 0 #2b2a5a; }
+.vn-dialog b { margin-right: 1cqh; color: #ffffff; font-weight: 700; }
+.vn-narration .vn-dialog p { color: #d8d2f5; }
+.vn-finale .vn-dialog p { color: #ffd84a; font-size: 4cqh; font-weight: 400; letter-spacing: 0.06em; }
+.vn-ghost { visibility: hidden; }
+.vn-next { margin-left: 1cqh; color: #ffd84a; font-size: 2.4cqh; font-style: normal; animation: vn-blink 0.8s steps(1) infinite; }
+.vn-skip { position: absolute; z-index: 5; top: 6.5%; right: 15%; padding: 0.5cqh 1.2cqh; border: 0.3cqh solid #e9e4fb; background: #14122ecc; color: #e9e4fb; font-family: var(--font-ui); font-size: 1.9cqh; }
+
+@keyframes vn-fade { from { opacity: 0; } }
+@keyframes vn-rise { from { opacity: 0; transform: translateY(3cqh); } }
+@keyframes vn-talk { 50% { transform: translateY(-0.5cqh); } }
+@keyframes vn-blink { 50% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .vn-scene, .vn-portrait, .vn-portrait .portrait, .vn-next { animation: none; } }
 
 /* 대결 전 상대 소개 */
 .briefing-scene { --briefing-lattice: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='72' height='72' fill='none' stroke='%239f93e0' stroke-opacity='.42' stroke-width='1.5'%3E%3Cpath d='M36 4 68 36 36 68 4 36Z'/%3E%3Cpath d='M36 18 54 36 36 54 18 36Z'/%3E%3Ccircle cx='36' cy='36' r='5'/%3E%3Ccircle cx='0' cy='0' r='11'/%3E%3Ccircle cx='72' cy='0' r='11'/%3E%3Ccircle cx='0' cy='72' r='11'/%3E%3Ccircle cx='72' cy='72' r='11'/%3E%3C/svg%3E"); position: absolute; inset: 42px 0 0; display: grid; grid-template-columns: minmax(0, 11fr) minmax(0, 9fr); gap: 14px; padding: 18px 22px 62px; overflow: hidden; background: var(--briefing-lattice) 0 0 / 72px 72px, #241f5e; }

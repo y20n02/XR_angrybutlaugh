@@ -1,3 +1,5 @@
+import Assets from "../assets.json";
+
 /* 대결 화면 앞쪽에 보이는 플레이어 뒷모습. 상황(kind)마다 옷만 달라집니다. */
 const OUTLINE = "#16131c";
 const CLOTHES: Record<string, { base: string; shade: string; light: string }> = {
@@ -6,8 +8,13 @@ const CLOTHES: Record<string, { base: string; shade: string; light: string }> = 
   shop: { base: "#b9b2a3", shade: "#8a8476", light: "#dcd6c8" },
 };
 
-function PlayerBack({ kind }: { kind: string }) {
+function PlayerBack({ kind, gender }: { kind: string; gender?: "f" | "m" | null }) {
   const cloth = CLOTHES[kind] ?? CLOTHES.office;
+  /* 주인공을 골랐으면 그 주인공의 뒷모습 그림을 씀 */
+  let picked = gender;
+  if (picked === undefined) { try { picked = localStorage.getItem("time-to-get-mad-player-v1") as "f" | "m" | null; } catch { picked = null; } }
+  const art = picked ? (Assets as any).players?.[picked]?.back : null;
+  if (art) return <div className="player-back has-art" aria-hidden="true"><img src={art} alt="" draggable={false} /></div>;
   return (
     <div className="player-back" aria-hidden="true">
       <svg viewBox="0 0 400 720" xmlns="http://www.w3.org/2000/svg">
