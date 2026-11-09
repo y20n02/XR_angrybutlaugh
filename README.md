@@ -1,54 +1,119 @@
-# React + TypeScript + Vite
+# 웃으며 화내기 (XR_angrybutlaugh)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+> 그때 그렇게 말할걸! — 무례한 사람에게 **웃으면서, 끝까지 할 말을 하는** 한국어 타자 대결 게임
 
-Currently, two official plugins are available:
+React + TypeScript + Vite로 만든 웹 게임입니다.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+---
 
-## Expanding the ESLint configuration
+## 실행 방법
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+[Node.js](https://nodejs.org/)(LTS)를 설치한 뒤, 레포 폴더에서:
 
-```js
-export default tseslint.config({
-  extends: [
-    // Remove ...tseslint.configs.recommended and replace with this
-    ...tseslint.configs.recommendedTypeChecked,
-    // Alternatively, use this for stricter rules
-    ...tseslint.configs.strictTypeChecked,
-    // Optionally, add this for stylistic rules
-    ...tseslint.configs.stylisticTypeChecked,
-  ],
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+```bash
+npm install
+npm run dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+브라우저에서 **http://localhost:5173** 으로 접속하면 됩니다.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+> 진행 상황(해금·자격증)과 고른 주인공은 **각자 브라우저**에 저장됩니다. 처음부터 다시 하려면 브라우저 개발자 도구 → Application → Local Storage에서 `time-to-get-mad-…` 항목을 지우면 됩니다.
 
-export default tseslint.config({
-  plugins: {
-    // Add the react-x and react-dom plugins
-    'react-x': reactX,
-    'react-dom': reactDom,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended typescript rules
-    ...reactX.configs['recommended-typescript'].rules,
-    ...reactDom.configs.recommended.rules,
-  },
-})
+---
+
+## `hyerinci` 브랜치에서 바뀐 것 (`main` 대비)
+
+`main`(11/03 김홍경 작업까지) 위에 커밋 2개를 쌓았습니다. `main`, `myhongkyung` 브랜치는 건드리지 않았습니다.
+
+| 커밋 | 내용 |
+| --- | --- |
+| `567c11e` | 인트로·첫 튜토리얼·캐릭터 소개 화면 추가, 대결 구도(상대 + 플레이어 뒷모습) 변경 |
+| `ac92e66` | **픽셀 맵 방식으로 전환**, 타이틀·인트로·UI를 90년대 PC 비주얼노벨 스타일로 개편, 새 캐릭터 그림 |
+
+### 1. 게임 흐름이 바뀌었어요
+
 ```
+인트로 → 타이틀 → (처음 한 번) 주인공 선택 → (처음 한 번) 튜토리얼 → 픽셀 맵 → NPC에게 말 걸기 → 상대 소개 → 대결
+```
+
+- 예전: **상황 선택 → 난이도 선택** 버튼 화면에서 골라서 대결
+- 지금: **픽셀 맵을 걸어 다니다가** 상대에게 말을 걸면 대결 시작
+  (예전 상황·난이도 선택 화면 코드는 남아 있지만 지금은 들어가는 길이 없음)
+
+### 2. 화면별 변경 사항
+
+| 화면 | 바뀐 내용 |
+| --- | --- |
+| **인트로** | 90년대 PC 비주얼노벨 스타일. 양옆 장식 기둥 + 가운데 장면 창 + 아래 `【이름】` 대사창. 독백은 밤의 자취방 픽셀아트, 상대 대사는 그 상대 맵 + 상반신 초상화(말할 때 들썩임) |
+| **타이틀** | 분홍 픽셀 로고를 가운데에. 배경은 **마지막으로 있던 맵**(다시 켜도 기억). ↑↓ + Enter 메뉴 |
+| **주인공 선택** (새로 추가) | 처음 GAME START 때 여자/남자 주인공 선택. 대결 화면 뒷모습과 맵 도트 캐릭터에 반영 |
+| **픽셀 맵** (새로 추가) | 회사·학교 팀플·아르바이트 맵 3개. 방향키/WASD 이동, Space로 말 걸기, ESC로 맵 이동 메뉴 |
+| **상대 소개** | 인물이 왼쪽 칸을 꽉 채우게 크게. 오른쪽 위에 이름·역할, 입체 회색 버튼, 철제 장식 배경 |
+| **대결** | 라벤더·남색 픽셀 UI로 통일. 배경은 상대가 있는 맵을 확대. 상대 대사는 **말풍선**에. 인물 크게, 외곽선 없음 |
+
+### 3. 픽셀 맵 규칙
+
+- 맵마다 **하·중·상 상대가 1명씩**(총 9명) 있어요.
+- **하**를 이기면 **중**, **중**을 이기면 **상**이 열립니다.
+- 잠긴 상대에게 말을 걸면 **말풍선만** 뜨고 대결은 안 됩니다. ("'하' 상대를 먼저 이겨야…")
+- 머리 위 표시: 노란 `!` 지금 대결 가능 · 자물쇠 잠김 · 초록 `✓` 이미 이김(재도전 가능)
+- NPC들은 자기 자리 근처(2칸 안)를 **자연스럽게 돌아다니고**, 플레이어가 옆에 오면 멈춥니다.
+
+### 4. 캐릭터 (그림 새로 생성 · 90년대 셀 애니 스타일)
+
+| 맵 | 하 | 중 | 상 |
+| --- | --- | --- | --- |
+| 회사 | 동기 | 대리 | 선임 |
+| 학교 팀플 | 말만 많은 팀원 | 가로채는 팀원 | 독불장군 조장 |
+| 아르바이트 | 커플 진상 | 진상 아줌마 | 진상 아저씨 |
+
+- 9명 각자 **이름·역할·소개(어떤 사람? / 자주 하는 말 / 대처법)** 문구가 따로 있어요.
+- 주인공 그림: 여자·남자 각각 앞모습(선택 화면) + 뒷모습(대결 화면)
+- 대결 대사는 기존 레벨별 대사를 그대로 사용 (새 인물 성격과 맞아서 유지)
+
+---
+
+## 어디를 고치면 되나요?
+
+| 고치고 싶은 것 | 파일 |
+| --- | --- |
+| 화면에 나오는 **모든 문구**(대사, 이름, 소개, 안내) | `src/locales/ko.json` |
+| ↳ NPC 이름·역할·소개·잠겼을 때 대사 | `ko.json` → `map.maps` |
+| ↳ 인트로 대사 | `ko.json` → `intro.beats` |
+| 맵 **가구 배치·NPC 위치·도트 외형(머리·옷 색)** | `src/game/maps.ts` |
+| 게임 UI **색**(대결·버튼·창) | `src/game/play-theme.css` 맨 위 `--ui-…` 변수 |
+| 캐릭터 **그림 교체** | `public/characters/` (파일명 `office-0`처럼 맵-레벨) + `src/assets.json` |
+
+### 캐릭터 그림 규칙
+
+- 위치: `public/characters/{맵}-{레벨}.webp` (맵: `office`/`team`/`shop`, 레벨: `0`하 `1`중 `2`상)
+- 주인공: `player-f-front`, `player-f-back`, `player-m-front`, `player-m-back`
+- **1024×1024 투명 배경, 전신, 인물 높이 약 88% · 위 여백 약 7%**로 맞추면 상반신 자르기가 그대로 맞아요.
+- 커플처럼 폭이 넓은 그림은 `play-theme.css`에서 따로 확대 비율을 조정합니다 (`.portrait.shop.lv-0`).
+
+---
+
+## 주요 파일 구조 (`src/game/`)
+
+| 파일 | 역할 |
+| --- | --- |
+| `GameScreen.tsx` | 게임 전체 흐름·대결 로직 (화면 전환, 타자 판정, 게이지, 미니게임, 엔딩) |
+| `IntroScreen.tsx` | 인트로 (자취방 픽셀아트·장식 기둥은 코드로 그림) |
+| `TitleScreen.tsx` / `title-screen.css` | 타이틀 |
+| `PlayerSelect.tsx` | 주인공 선택 |
+| `MapScreen.tsx` / `map-screen.css` | 픽셀 맵 (맵·도트 캐릭터를 코드로 그림, 이동·충돌·말 걸기·NPC 돌아다니기) |
+| `maps.ts` | 맵 데이터 (가구, NPC 위치·외형, 색) |
+| `BriefingScreen.tsx` / `briefing-theme.css` | 상대 소개 |
+| `TutorialScreen.tsx` | 첫 튜토리얼 |
+| `PlayerBack.tsx` | 대결 화면 주인공 뒷모습 |
+| `play-theme.css` | 게임 UI 공통 테마(라벤더·남색), 인물 자르기 설정 |
+| `game.css`, `battle-layout.css`, `intro-tutorial.css` | 기존 스타일 (`play-theme.css`가 위에서 덮어씀) |
+
+---
+
+## 남은 일 / 메모
+
+- 아르바이트 맵은 캐릭터는 **카페 진상**인데 맵 모양은 아직 **편의점** → 카페로 다시 그릴지 결정 필요
+- 주인공을 한 번 고르면 게임 안에서 다시 바꾸는 메뉴는 아직 없음
+- 예전 상황·난이도 선택 화면 코드(`scenarios`, `difficulty`)는 맵 방식이 확정되면 정리 예정
+- `main`에는 아직 반영 안 됨 → 합치려면 GitHub에서 Pull Request
