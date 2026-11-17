@@ -68,6 +68,6 @@
 
 /* 오른쪽 칸 맨 위: 상대 이름(크게)·역할·장소 */
 .briefing-head { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 10px 12px 12px; border: 3px solid; border-color: #f1edff #6a62a8 #6a62a8 #f1edff; background: #14122ee6; box-shadow: 0 0 0 2px #0b0a1c, 4px 5px 0 2px #0b0a1c88; }
-.briefing-head h2 { color: #ffd84a; font-size: clamp(28px, 3.2vw, 42px); }
-.briefing-head strong { color: #ffffff; font-size: clamp(15px, 1.4vw, 19px); font-weight: 400; }
+.briefing-head h2 { color: #ffd84a; font-size: clamp(28px, calc(var(--vw) * 3.2), 42px); }
+.briefing-head strong { color: #ffffff; font-size: clamp(15px, calc(var(--vw) * 1.4), 19px); font-weight: 400; }
 .briefing-head span { margin-top: 2px; background: none; color: #b9b2e0; font-size: 13px; }

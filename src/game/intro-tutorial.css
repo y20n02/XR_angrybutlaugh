@@ -45,12 +45,12 @@
 /* 원본이 전신 그림이라 2.4배로 키워 상반신만 보이게 함 */
 .briefing-portrait .has-art .portrait-art { inset: 0 auto auto -70%; width: 240%; max-width: none; height: 240%; object-position: center top; }
 .briefing-nameplate { position: absolute; z-index: 6; bottom: 16px; left: 16px; display: flex; flex-direction: column; gap: 4px; padding: 9px 16px; border: 2px solid #e0c386; background: #171824f4; box-shadow: 3px 3px 0 #0a0a18; }
-.briefing-nameplate b { color: #f6e0af; font-size: clamp(20px, 2vw, 28px); }
+.briefing-nameplate b { color: #f6e0af; font-size: clamp(20px, calc(var(--vw) * 2), 28px); }
 .briefing-nameplate small { color: #b9aed0; font-size: 15px; }
 .briefing-side { display: flex; flex-direction: column; gap: 12px; padding: 14px 20px 18px; background: var(--briefing-lattice) 0 0 / 72px 72px, #2c2670; }
 .briefing-head { text-align: center; }
 .briefing-head p { margin: 0 0 2px; color: #e9c26f; font-size: 15px; letter-spacing: 0.12em; }
-.briefing-head h2 { margin: 0; color: #fff2d2; font-size: clamp(26px, 3vw, 40px); text-shadow: 3px 3px 0 #17133f; }
+.briefing-head h2 { margin: 0; color: #fff2d2; font-size: clamp(26px, calc(var(--vw) * 3), 40px); text-shadow: 3px 3px 0 #17133f; }
 .briefing-head span { color: #d6cdf0; font-size: 15px; }
 .briefing-menu { display: flex; flex: 1; flex-direction: column; justify-content: center; gap: 8px; min-height: 0; }
 .briefing-menu button { align-self: center; width: min(280px, 90%); min-height: 44px; border: 2px solid; border-color: #efeaff #5a5078 #5a5078 #efeaff; border-radius: 0; background: #b9b4c9; box-shadow: 0 0 0 2px #17133f; color: #1c1838; font-size: 18px; font-weight: 700; }
@@ -58,7 +58,7 @@
 .briefing-menu .briefing-start { background: #574234; color: #ffdf8a; }
 .briefing-menu .briefing-start.selected { animation: ready-pulse 1.2s steps(2) infinite; }
 .briefing-box { display: flex; align-items: center; min-height: 98px; padding: 12px 16px; border: 3px solid #17133f; background: #f7f4ff; box-shadow: inset 0 0 0 2px #8f85c4; }
-.briefing-box p { width: 100%; margin: 0; color: #1c1838; font-family: var(--font-read); font-size: clamp(16px, 1.45vw, 20px); line-height: 1.55; word-break: keep-all; animation: dialogue-reveal 500ms steps(30, end) both; }
+.briefing-box p { width: 100%; margin: 0; color: #1c1838; font-family: var(--font-read); font-size: clamp(16px, calc(var(--vw) * 1.45), 20px); line-height: 1.55; word-break: keep-all; animation: dialogue-reveal 500ms steps(30, end) both; }
 .briefing-hint { position: absolute; right: 0; bottom: 34px; left: 0; color: #cfc6ea; font-size: 13px; letter-spacing: 0.08em; text-align: center; }
 
 /* 튜토리얼 */
@@ -69,14 +69,15 @@
 .tutorial-coach b { color: #f1cb79; font-size: 15px; }
 .tutorial-coach p { margin: 4px 0 0; color: #e6dcc6; font-size: 13px; line-height: 1.5; }
 .tutorial-rich { word-break: keep-all; }
-.reaction-text.tutorial-rich { font-size: clamp(18px, 1.8vw, 24px); text-align: center; }
+.reaction-text.tutorial-rich { font-size: clamp(18px, calc(var(--vw) * 1.8), 24px); text-align: center; }
 .tutorial-rich .how-em { color: #f3c86c; font-style: normal; font-weight: 700; white-space: nowrap; }
 .tutorial-rich .how-warn { color: #ff7a7f; font-style: normal; font-weight: 700; white-space: nowrap; }
 .tutorial-rich .how-key { display: inline-block; margin: 0 2px; padding: 0 7px; border: 1px solid #c5a95d; border-bottom-width: 3px; background: #24202a; color: #f3d683; font-family: var(--font-ui); font-size: 0.85em; line-height: 1.5; }
 .tutorial-replay { width: auto; white-space: nowrap; }
 .howto-actions { margin-top: 2px; }
 
-@media (max-width: 620px) {
+/* [수정 김홍경 11/17] 무대가 1280×720 고정이라 창 크기 조건 대신 사용 안 함 (원래 max-width: 620px, 작은 화면용) */
+@media not all {
   .briefing-scene { top: 35px; gap: 8px; padding: 8px 8px 28px; }
   .briefing-side { gap: 6px; padding: 8px; }
   .briefing-menu { gap: 5px; }
@@ -88,7 +89,7 @@
   .briefing-head p, .briefing-head span { font-size: 11px; }
   .briefing-hint { bottom: 6px; font-size: 11px; }
   .intro-screen { top: 35px; }
-  .intro-portrait { width: 46vw; }
+  .intro-portrait { width: calc(var(--vw) * 46); }
   .tutorial-bar { right: 10px; left: 10px; font-size: 11px; }
   .tutorial-bar span:nth-child(2) { display: none; }
   .tutorial-coach { top: 74px; right: 10px; left: 10px; width: auto; padding: 8px; }

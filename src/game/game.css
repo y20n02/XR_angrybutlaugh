@@ -16,10 +16,21 @@
   letter-spacing: 0.01em;
 }
 
+/* [수정 김홍경 11/17] 화면 크기 자동 맞춤: 게임 화면을 1280×720 고정 무대로 만들고 창 크기에 맞춰 통째로 확대·축소
+   - 배율 --stage-scale은 GameScreen.tsx에서 창 크기로 계산 (가로·세로 중 작은 쪽 기준, 16:9 유지)
+   - 무대 안의 vw/vh는 창이 아니라 무대 기준이 되도록 var(--vw)=12.8px, var(--vh)=7.2px로 바꿈
+   → 창이 작아져도 글자·버튼·박스가 같은 비율로 줄어서 서로 겹치지 않음 */
 .screen-frame {
-  position: relative;
-  width: min(100vw, 177.7778vh);
-  height: min(100vh, 56.25vw);
+  --vw: 12.8px;
+  --vh: 7.2px;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  flex: none;
+  width: 1280px;
+  height: 720px;
+  transform: translate(-50%, -50%) scale(var(--stage-scale, 1));
+  transform-origin: center;
   min-width: 0;
   overflow: hidden;
   border: 4px solid #76664d;
@@ -83,14 +94,20 @@ button { cursor: pointer; }
 button:disabled { cursor: not-allowed; }
 button:focus-visible, input:focus-visible { outline: 2px solid #f3c86c; outline-offset: 3px; }
 
+/* [수정 김홍경 11/17] 무대 안 맨 아래 가운데 (모서리 장식·하단 정보 줄과 안 겹치게) */
 .keyboard-hint {
   position: absolute;
-  bottom: 6px;
+  z-index: 41;
+  bottom: 11px;
+  pointer-events: none;
   left: 50%;
   width: max-content;
-  max-width: 92vw;
+  max-width: 52%;
+  overflow: hidden;
   color: #766d60;
-  font-size: 13px;
+  font-size: 12px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
   letter-spacing: 0.04em;
   text-align: center;
   transform: translateX(-50%);
@@ -120,9 +137,9 @@ button:focus-visible, input:focus-visible { outline: 2px solid #f3c86c; outline-
 .cityline::before { position: absolute; right: 0; bottom: 0; left: 0; height: 70%; content: ""; background: repeating-linear-gradient(90deg, transparent 0 6%, #0a0c15 6% 9%, transparent 9% 12%); }
 .title-copy { position: absolute; z-index: 2; top: 19%; left: 50%; width: 100%; text-align: center; transform: translateX(-50%); }
 .eyebrow { margin: 0 0 12px; color: #d2a555; font-size: 16px; font-weight: 700; letter-spacing: 0.12em; }
-.title-copy h1 { margin: 0; color: #fff2d2; font-family: var(--font-ui); font-size: clamp(36px, min(6.25vw, 10vh), 82px); font-weight: 700; /* [수정 김홍경 11/03] 화면 높이가 낮을 때 메뉴와 겹치지 않게 높이 기준(vh)도 함께 고려 */ letter-spacing: 0.08em; text-shadow: 4px 5px 0 #6e344a, 7px 8px 0 #17141f, 0 0 32px #ec9a6544; }
-.title-sub { margin: 13px 0 0; color: #e6c79a; font-size: clamp(18px, 1.88vw, 25px); letter-spacing: 0.16em; }
-.title-rule { width: min(360px, 42vw); height: 1px; margin: 24px auto 0; background: linear-gradient(90deg, transparent, #dfb972, transparent); }
+.title-copy h1 { margin: 0; color: #fff2d2; font-family: var(--font-ui); font-size: clamp(36px, min(calc(var(--vw) * 6.25), calc(var(--vh) * 10)), 82px); font-weight: 700; /* [수정 김홍경 11/03] 화면 높이가 낮을 때 메뉴와 겹치지 않게 높이 기준(vh)도 함께 고려 */ letter-spacing: 0.08em; text-shadow: 4px 5px 0 #6e344a, 7px 8px 0 #17141f, 0 0 32px #ec9a6544; }
+.title-sub { margin: 13px 0 0; color: #e6c79a; font-size: clamp(18px, calc(var(--vw) * 1.88), 25px); letter-spacing: 0.16em; }
+.title-rule { width: min(360px, calc(var(--vw) * 42)); height: 1px; margin: 24px auto 0; background: linear-gradient(90deg, transparent, #dfb972, transparent); }
 .title-rule span { display: block; width: 6px; height: 6px; margin: -3px auto 0; background: #f2c46b; transform: rotate(45deg); }
 .title-menu { position: absolute; z-index: 4; right: 11%; bottom: 15%; display: flex; flex-direction: column; gap: 9px; width: 280px; }
 /* [수정 김홍경 11/03] 글자가 커져서 ▶ 화살표·0/3 표시와 겹치지 않게 버튼 폭을 메뉴 폭에 맞추고 오른쪽 여백 확보 */
@@ -163,7 +180,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid #f3c86c; outline-
 .scenario-scene, .difficulty-scene { max-width: 1120px; padding-left: 6%; padding-right: 6%; }
 .scene-heading-row { display: flex; align-items: end; justify-content: space-between; margin-bottom: 23px; }
 /* [수정 김홍경 11/03] 메뉴 화면 글자·버튼 전체적으로 더 크게 (제목, 상황/난이도 버튼, 뒤로 버튼) */
-.scene-heading { margin: 0; color: #f9e8c2; font-size: clamp(34px, 4.2vw, 54px); letter-spacing: 0.05em; }
+.scene-heading { margin: 0; color: #f9e8c2; font-size: clamp(34px, calc(var(--vw) * 4.2), 54px); letter-spacing: 0.05em; }
 .chapter-count { padding-bottom: 5px; color: #8f8576; font-size: 19px; letter-spacing: 0.12em; }
 .scenario-list, .difficulty-list { display: flex; flex-direction: column; gap: 14px; }
 .scenario-row, .difficulty-option {
@@ -247,10 +264,10 @@ button:focus-visible, input:focus-visible { outline: 2px solid #f3c86c; outline-
 .meter { flex: 1; min-width: 0; }
 /* [수정 김홍경 11/03] 분노·사회생활력·상대 멘탈 게이지 글자와 막대를 크게
    화면 폭에 따라 크기가 조절되고, 좁은 화면에서도 두 줄로 꺾이지 않게 함 */
-.meter > div { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; color: #d0c8b3; font-size: clamp(12px, 1vw, 16px); letter-spacing: 0.04em; white-space: nowrap; }
+.meter > div { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 6px; color: #d0c8b3; font-size: clamp(12px, calc(var(--vw) * 1), 16px); letter-spacing: 0.04em; white-space: nowrap; }
 .meter > div span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
-.meter > div b { flex-shrink: 0; color: #f5e7c6; font-size: clamp(14px, 1.18vw, 19px); }
-.meter > div small { color: #938c7b; font-size: clamp(11px, 0.87vw, 14px); }
+.meter > div b { flex-shrink: 0; color: #f5e7c6; font-size: clamp(14px, calc(var(--vw) * 1.18), 19px); }
+.meter > div small { color: #938c7b; font-size: clamp(11px, calc(var(--vw) * 0.87), 14px); }
 .meter > i { display: block; height: 11px; border: 1px solid #a99b7a; background: #17151c; box-shadow: inset 1px 1px #07070c; }
 .meter > i em { display: block; height: 100%; background: #e8b94e; transition: width 220ms linear; }
 .meter-anger > i em { background: linear-gradient(90deg, #d78654, #e44d53); }
@@ -258,7 +275,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid #f3c86c; outline-
 .meter-mental > i em { background: linear-gradient(90deg, #817dce, #dd9cbe); }
 .meter-anger:has(em[style*="100%"]) > i { box-shadow: 0 0 13px #e6445c; }
 
-.stage-character { position: absolute; z-index: 2; bottom: 21%; left: 50%; display: flex; width: min(310px, 25vw); height: 64%; justify-content: center; transform: translateX(-50%); transition: filter 250ms ease, transform 250ms ease; }
+.stage-character { position: absolute; z-index: 2; bottom: 21%; left: 50%; display: flex; width: min(310px, calc(var(--vw) * 25)); height: 64%; justify-content: center; transform: translateX(-50%); transition: filter 250ms ease, transform 250ms ease; }
 .stage-character.character-emphasis { transform: translateX(-50%) scale(1.09); }
 .play-fever .stage-character { opacity: 0.19; filter: grayscale(1) brightness(0.7); transform: translateX(-50%) scale(0.56); }
 .character-tag { position: absolute; right: -74px; bottom: 11%; display: flex; flex-direction: column; gap: 4px; width: max-content; padding: 8px 11px; border: 1px solid #d2b770; background: #1c1b22d9; box-shadow: 2px 3px #09090e; }
@@ -332,15 +349,15 @@ button:focus-visible, input:focus-visible { outline: 2px solid #f3c86c; outline-
 .fever-bottom .ready-button { margin: 6px auto; }
 @keyframes ready-pulse { 50% { box-shadow: 0 0 0 2px #e5bd6855, 0 0 18px #e5bd6866; } }
 /* 넓은 화면에서는 왼쪽 남은 시간 칸만큼 오른쪽에 빈칸을 둬서 입력창 자체가 정가운데 오게 */
-@media (min-width: 1100px) { .dialog-panel .input-row::after { content: ""; flex: 0 0 67px; } }
+/* [수정 김홍경 11/17] 무대가 1280×720 고정이라 창 크기 조건 대신 항상 적용 (원래 min-width: 1100px) */ @media all { .dialog-panel .input-row::after { content: ""; flex: 0 0 67px; } }
 .dialog-panel .typing-footer { justify-content: center; gap: 28px; margin-bottom: auto; }
 .dialog-name { display: flex; align-items: center; justify-content: space-between; color: #f1cb79; font-size: 15px; font-weight: 900; }
 .dialog-name i { color: #9d9280; font-size: 12px; font-style: normal; font-weight: 400; }
-.taunt-line { min-height: 30px; margin: 8px 0; overflow: hidden; color: #f4efdf; font-family: var(--font-read); font-size: clamp(17px, 1.56vw, 21px); font-weight: 700; line-height: 1.5; animation: dialogue-reveal 950ms steps(40, end) both; }
+.taunt-line { min-height: 30px; margin: 8px 0; overflow: hidden; color: #f4efdf; font-family: var(--font-read); font-size: clamp(17px, calc(var(--vw) * 1.56), 21px); font-weight: 700; line-height: 1.5; animation: dialogue-reveal 950ms steps(40, end) both; }
 /* [수정 김홍경 11/03] 목표 문장을 상대 대사보다 눈에 띄게: 진짜 굵은 픽셀 폰트(Galmuri11 Bold)·더 큰 글자·금색 테두리 상자·라벨 배지 */
 .prompt-row { display: flex; align-items: center; gap: 14px; margin: 10px 0; padding: 10px 18px; border: 2px solid #e4b951; border-left-width: 6px; background: linear-gradient(90deg, #2a2316, #161521); box-shadow: 0 0 0 1px #0b0b12, 0 0 18px #e4b95133; }
 .prompt-label { flex: 0 0 auto; padding: 3px 8px; background: #e4b951; color: #1a1410; font-family: var(--font-ui); font-size: 13px; font-weight: 700; letter-spacing: 0.08em; }
-.prompt-sentence { color: #fff4d6; font-family: var(--font-ui); font-size: clamp(19px, 1.75vw, 26px); font-weight: 700; letter-spacing: 0.03em; line-height: 1.4; text-shadow: 2px 2px 0 #4a3a1c; }
+.prompt-sentence { color: #fff4d6; font-family: var(--font-ui); font-size: clamp(19px, calc(var(--vw) * 1.75), 26px); font-weight: 700; letter-spacing: 0.03em; line-height: 1.4; text-shadow: 2px 2px 0 #4a3a1c; }
 .input-row { display: flex; align-items: center; gap: 13px; }
 .timer-block { display: flex; flex: 0 0 67px; flex-direction: column; gap: 2px; color: #a69b87; text-align: center; }
 .timer-block span { font-size: 12px; }
@@ -374,16 +391,17 @@ button:focus-visible, input:focus-visible { outline: 2px solid #f3c86c; outline-
 .typing-footer { display: flex; justify-content: space-between; min-height: 12px; margin-top: 5px; color: #ba857b; font-size: 12px; }
 .typing-footer span:last-child { color: #8f8370; }
 .reaction-panel { display: flex; flex-direction: column; justify-content: space-between; min-height: 22%; }
-.reaction-text { margin: 19px 0; color: #f7edda; font-family: var(--font-read); font-size: clamp(20px, 2.12vw, 29px); line-height: 1.55; animation: dialogue-reveal 800ms steps(38, end) both; }
+.reaction-text { margin: 19px 0; color: #f7edda; font-family: var(--font-read); font-size: clamp(20px, calc(var(--vw) * 2.12), 29px); line-height: 1.55; animation: dialogue-reveal 800ms steps(38, end) both; }
 .reaction-controls { display: flex; align-items: center; justify-content: space-between; color: #a89674; font-size: 13px; }
 .reaction-controls .action-button { width: var(--control-w, 188px); min-height: var(--control-h, 50px); }
-.play-corner { position: absolute; z-index: 5; right: 22px; bottom: 12px; left: 22px; display: flex; justify-content: space-between; color: #948671; font-size: 12px; letter-spacing: 0.11em; pointer-events: none; }
+/* [수정 김홍경 11/17] 모서리 장식(8~23px)과 겹치지 않게 좌우 22px → 36px */
+.play-corner { position: absolute; z-index: 5; right: 36px; bottom: 10px; left: 36px; display: flex; justify-content: space-between; color: #948671; font-size: 12px; letter-spacing: 0.11em; pointer-events: none; }
 
 /* Interactive event overlays */
 .minigame-shade { position: absolute; z-index: 12; inset: 0; display: flex; align-items: center; justify-content: center; background: #080910dd; backdrop-filter: blur(4px); }
 .minigame-card { position: relative; z-index: 2; width: min(600px, 80%); padding: 28px 32px; text-align: center; }
 .event-kicker { margin: 0 0 12px; color: #d6aa5a; font-size: 13px; letter-spacing: 0.12em; }
-.minigame-card h2 { margin: 0 0 10px; color: #f8e4b5; font-size: clamp(28px, 3.75vw, 40px); }
+.minigame-card h2 { margin: 0 0 10px; color: #f8e4b5; font-size: clamp(28px, calc(var(--vw) * 3.75), 40px); }
 .minigame-card > p:not(.event-kicker) { color: #b8b09f; font-size: 15px; line-height: 1.65; }
 .calm-dial { position: relative; height: 25px; margin: 32px 0 5px; border: 2px solid #c4ad70; background: repeating-linear-gradient(90deg, #1a1a25 0 9.5%, #36313a 10%); box-shadow: inset 0 0 0 2px #090a11; }
 .calm-zone { position: absolute; top: 0; bottom: 0; background: #e9ca65; box-shadow: 0 0 17px #f8d552; }
@@ -392,7 +410,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid #f3c86c; outline-
 .minigame-card .action-button { width: min(var(--control-w, 188px), 100%); }
 .inline-feedback { min-height: 16px; margin-bottom: 0; color: #efac78 !important; }
 .stare-overlay { background: radial-gradient(ellipse at 50% 45%, #562a32ed, #0a0911fa 70%); }
-.stare-backdrop { position: absolute; inset: 12% 0 auto; color: #f4c9a422; font-size: clamp(52px, 10.0vw, 125px); font-weight: 900; letter-spacing: 0.12em; text-align: center; }
+.stare-backdrop { position: absolute; inset: 12% 0 auto; color: #f4c9a422; font-size: clamp(52px, calc(var(--vw) * 10.0), 125px); font-weight: 900; letter-spacing: 0.12em; text-align: center; }
 .stare-portrait { position: absolute; top: 12%; left: 50%; width: 200px; height: 280px; opacity: 0.72; transform: translateX(-50%); filter: saturate(1.1); }
 .stare-card { align-self: end; width: min(630px, 82%); margin-bottom: 5%; background: #17131df2; }
 .stare-meter { height: 14px; margin: 20px 0 7px; border: 1px solid #d9b76c; background: #080a12; }
@@ -406,9 +424,12 @@ button:focus-visible, input:focus-visible { outline: 2px solid #f3c86c; outline-
 .fever-overlay::before { position: absolute; inset: 0; content: ""; opacity: 0.17; background: repeating-linear-gradient(135deg, transparent 0 25px, #f4c24b 26px 28px, transparent 29px 47px); pointer-events: none; }
 .fever-top { position: absolute; z-index: 2; top: 11%; right: 8%; left: 8%; display: flex; align-items: center; justify-content: space-between; color: #ffe58d; font-size: 22px; font-weight: 900; letter-spacing: 0.16em; text-shadow: 3px 3px #762f38; }
 .fever-top b, .fever-top i { color: #f8ead3; font-size: 15px; font-style: normal; letter-spacing: 0.08em; }
-.fever-subtitle { position: absolute; z-index: 2; top: 18%; right: 0; left: 0; margin: 0; color: #ffd783; font-size: clamp(17px, 1.75vw, 24px); letter-spacing: 0.14em; text-align: center; }
+.fever-subtitle { position: absolute; z-index: 2; top: 18%; right: 0; left: 0; margin: 0; color: #ffd783; font-size: clamp(17px, calc(var(--vw) * 1.75), 24px); letter-spacing: 0.14em; text-align: center; }
 .fever-lane { position: absolute; inset: 27% 11% 27%; border: 1px solid #a36c5b77; background: #0808115c; }
-.falling-sentence { position: absolute; z-index: 3; left: 50%; width: max-content; max-width: 90%; padding: 11px 17px; border: 2px solid #ffd878; background: #472c32; box-shadow: 0 0 20px #ec764e88, 4px 4px 0 #090912; color: #fff0c9; font-family: var(--font-read); font-size: clamp(17px, 1.75vw, 24px); font-weight: 900; text-align: center; white-space: nowrap; transform-origin: center top; transform: translateX(-50%); }
+.falling-sentence { position: absolute; z-index: 3; left: 50%; width: max-content; max-width: 90%; padding: 11px 17px; border: 2px solid #ffd878; background: #472c32; box-shadow: 0 0 20px #ec764e88, 4px 4px 0 #090912; color: #fff0c9; font-family: var(--font-read); font-size: clamp(17px, calc(var(--vw) * 1.75), 24px); font-weight: 900; text-align: center; white-space: nowrap; transform-origin: center top; transform: translateX(-50%); }
+/* [수정 김홍경 11/17] 피버 어절: 짧은 단어라 글자를 키우고, 등장할 때 살짝 튀어나오게 함 */
+.falling-word { padding: 9px 18px; font-size: clamp(20px, calc(var(--vw) * 2.1), 30px); animation: falling-word-pop 0.18s ease-out; }
+@keyframes falling-word-pop { from { opacity: 0; filter: brightness(1.8); } to { opacity: 1; filter: none; } }
 .dead-line { position: absolute; z-index: 2; right: 0; left: 0; border-top: 2px dashed #ff655d; }
 .dead-line span { position: absolute; top: 4px; right: 8px; color: #ff776a; font-size: 13px; font-weight: 900; letter-spacing: 0.16em; }
 .fever-bottom { position: absolute; z-index: 2; right: 9%; bottom: 8%; left: 9%; text-align: center; }
@@ -419,8 +440,8 @@ button:focus-visible, input:focus-visible { outline: 2px solid #f3c86c; outline-
 /* Outcomes and practice-after-loss */
 .ending-scene { display: flex; align-items: center; justify-content: center; background: radial-gradient(ellipse at 50% 45%, #292439, #100f19 75%); }
 .ending-content { width: min(760px, 86%); max-height: 92%; overflow: auto; padding: 21px 29px; text-align: center; }
-.ending-content h1 { margin: 4px 0; color: #f4ce73; font-size: clamp(39px, 5.0vw, 60px); letter-spacing: 0.14em; text-shadow: 3px 4px #6b333c; }
-.ending-content h2 { margin: 6px 0 12px; color: #ede2cb; font-size: clamp(17px, 1.69vw, 22px); }
+.ending-content h1 { margin: 4px 0; color: #f4ce73; font-size: clamp(39px, calc(var(--vw) * 5.0), 60px); letter-spacing: 0.14em; text-shadow: 3px 4px #6b333c; }
+.ending-content h2 { margin: 6px 0 12px; color: #ede2cb; font-size: clamp(17px, calc(var(--vw) * 1.69), 22px); }
 .ending-quote { margin: 8px 0; color: #e5b876; font-size: 17px; }
 .result-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 12px 0; }
 .result-stat { display: flex; flex-direction: column; gap: 5px; padding: 8px 6px; border: 1px solid #66583e; background: #11121b; }
@@ -447,9 +468,10 @@ button:focus-visible, input:focus-visible { outline: 2px solid #f3c86c; outline-
 .night-bed { position: absolute; right: 12%; bottom: 0; left: 9%; height: 35%; border-top: 9px solid #74617a; background: linear-gradient(180deg, #392e48, #211e30); box-shadow: 0 -8px 0 #13121e; }
 .pillow { position: absolute; top: -34px; left: 18%; width: 22%; height: 55px; border: 2px solid #8c7d8b; border-radius: 25px 25px 7px 7px; background: #d0c3bf; transform: rotate(-4deg); }
 .blanket-shape { position: absolute; top: -15px; right: 2%; left: 33%; height: 90%; border: 2px solid #897182; border-radius: 38% 20% 0 0; background: linear-gradient(135deg, #63516c, #322a42 65%, #241f31); clip-path: polygon(0 10%, 28% 0, 100% 10%, 100% 100%, 0 100%); }
-.night-thought { position: absolute; top: 21%; left: 16%; max-width: 36%; color: #cfc4d4; font-family: var(--font-read); font-size: clamp(16px, 1.88vw, 24px); line-height: 1.6; text-shadow: 2px 2px #090911; }
+/* [수정 김홍경 11/17] 위쪽 대사 상자(night-narrative)와 겹치던 속마음 글귀를 상자 아래로 내리고 흐리게 */
+.night-thought { position: absolute; top: 49%; left: 12%; max-width: 50%; opacity: 0.55; color: #cfc4d4; font-family: var(--font-read); font-size: clamp(16px, calc(var(--vw) * 1.88), 24px); line-height: 1.6; text-shadow: 2px 2px #090911; }
 .night-narrative { position: absolute; z-index: 4; top: 10%; left: 10%; display: flex; flex-direction: column; align-items: flex-start; gap: 14px; max-width: 56%; padding: 14px 17px; border-left: 3px solid #d5ad68; background: #11121bcd; color: #d9d0c6; font-size: 16px; line-height: 1.7; }
-.night-narrative h2 { margin: 0; color: #f4ddb1; font-size: clamp(20px, 2.5vw, 30px); }
+.night-narrative h2 { margin: 0; color: #f4ddb1; font-size: clamp(20px, calc(var(--vw) * 2.5), 30px); }
 .night-narrative .action-button { width: var(--control-w, 188px); }
 .blanket-game { position: relative; z-index: 3; width: min(660px, 84%); padding: 25px; text-align: center; }
 .blanket-game h2 { margin: 0; color: #f1d48d; font-size: 35px; }
@@ -466,10 +488,11 @@ button:focus-visible, input:focus-visible { outline: 2px solid #f3c86c; outline-
 @keyframes fever-flash { 0% { filter: brightness(2); } 100% { filter: brightness(1); } }
 @keyframes dialogue-reveal { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0 0 0 0); } }
 
-@media (max-width: 900px) {
-  .screen-frame { width: 100vw; height: 100vh; border-width: 2px; }
+/* [수정 김홍경 11/17] 무대가 1280×720 고정이라 창 크기 조건 대신 사용 안 함 (원래 max-width: 900px, 작은 화면용) */
+@media not all {
+  .screen-frame { width: calc(var(--vw) * 100); height: calc(var(--vh) * 100); border-width: 2px; }
   .title-menu { right: 7%; bottom: 13%; width: 220px; }
-  .stage-character { width: 32vw; height: 58%; bottom: 24%; }
+  .stage-character { width: calc(var(--vw) * 32); height: 58%; bottom: 24%; }
   .character-tag { right: -63px; }
   .dialog-panel { right: 3%; bottom: 4%; left: 3%; padding: 10px 13px; }
   .scene-meta { top: 12px; }
@@ -480,11 +503,12 @@ button:focus-visible, input:focus-visible { outline: 2px solid #f3c86c; outline-
   .menu-scene { padding-right: 7%; padding-left: 7%; }
 }
 
-@media (max-width: 620px) {
+/* [수정 김홍경 11/17] 무대가 1280×720 고정이라 창 크기 조건 대신 사용 안 함 (원래 max-width: 620px, 작은 화면용) */
+@media not all {
   .top-strip { height: 35px; padding: 0 12px; font-size: 12px; }
   .title-screen, .menu-scene, .ending-scene, .play-scene { top: 35px; }
   .title-copy { top: 15%; }
-  .title-menu { right: 50%; bottom: 10%; width: min(250px, 65vw); transform: translateX(50%); }
+  .title-menu { right: 50%; bottom: 10%; width: min(250px, calc(var(--vw) * 65)); transform: translateX(50%); }
   .title-menu .menu-button { width: 100%; min-height: 42px; }
   .title-footer { bottom: 8px; font-size: 11px; }
   .neon-window { top: 8%; left: 8%; width: 52%; height: 35%; }
@@ -516,7 +540,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid #f3c86c; outline-
   .meter > div { font-size: 13px; }
   .meter > div b { font-size: 14px; }
   .meter > i { height: 8px; }
-  .stage-character { bottom: 32%; width: 39vw; height: 48%; }
+  .stage-character { bottom: 32%; width: calc(var(--vw) * 39); height: 48%; }
   .character-tag { right: -53px; bottom: 6%; padding: 5px; }
   .character-tag b { font-size: 12px; }
   .character-tag small { font-size: 11px; }
@@ -556,9 +580,10 @@ button:focus-visible, input:focus-visible { outline: 2px solid #f3c86c; outline-
 }
 
 /* [수정 김홍경 11/03] 화면 높이가 낮을 때 HOW TO PLAY 제목·뒤로 버튼이 잘리지 않게 촘촘하게 */
-@media (max-height: 760px) {
+/* [수정 김홍경 11/17] 무대가 1280×720 고정이라 창 크기 조건 대신 항상 적용 (원래 max-height: 760px) */
+@media all {
   .howto-scene { padding-top: 2%; padding-bottom: 2%; }
-  .howto-scene .scene-heading { font-size: clamp(24px, 3vw, 34px); }
+  .howto-scene .scene-heading { font-size: clamp(24px, calc(var(--vw) * 3), 34px); }
   .howto-panel { margin: 10px auto; padding: 8px 20px; }
   .howto-panel p { margin: 6px 0; font-size: 14px; line-height: 1.55; }
   .howto-panel .how-head { display: inline; margin: 0 10px 0 0; }

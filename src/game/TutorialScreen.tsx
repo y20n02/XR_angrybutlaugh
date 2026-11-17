@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import type { ComponentType, MutableRefObject, ReactNode } from "react";
 import Text from "../locales/ko.json";
 import PlayerBack from "./PlayerBack";
+import CalmRace, { raceProgress, raceSeconds } from "./CalmRace"; /* [추가 김홍경 11/17] 분노 조절 → 진정 레이스 */
 
 /* 처음 GAME START를 눌렀을 때 나오는 체험형 연습. 실패해도 불이익 없이 다시 시도합니다.
    문구는 ko.json의 tutorial, 난이도는 GameScreen.tsx의 T.tutorial에서 고칩니다. */
@@ -24,8 +25,12 @@ type Phase = "info" | "ready" | "active" | "result";
 const STEPS = ["welcome", "gauges", "typing", "penalty", "calm", "stare", "fever", "rules"] as const;
 type Step = (typeof STEPS)[number];
 const FEVER_START_Y = -14;
-const FEVER_SENTENCES = Text.tutorial.feverSentences;
-const firstPhase = (step: Step): Phase => step === "calm" ? "active" : step === "typing" || step === "stare" || step === "fever" ? "ready" : "info";
+/* [수정 김홍경 11/17] 튜토리얼 피버도 본 게임처럼 어절 하나씩 떨어짐 (끝 마침표는 뺌) */
+const FEVER_SENTENCES: string[] = Text.tutorial.feverSentences.flatMap((sentence: string) => sentence.split(/\s+/)).map((word: string) => word.replace(/[.,!?…~]+$/u, "")).filter(Boolean);
+const feverLaneX = (index: number) => 20 + (index * 37) % 61;
+/* [수정 김홍경 11/17] 진정 레이스도 시작 버튼부터 (calm: active → ready) */
+const firstPhase = (step: Step): Phase => step === "typing" || step === "calm" || step === "stare" || step === "fever" ? "ready" : "info";
+const CALM_TARGET: string = Text.tutorial.calmTarget;
 
 function TutorialScreen({ T, frameRef, kit, onTone, onFinish }: TutorialProps) {
   const { Portrait, Meter, TypingPreview, countErrors, renderHowText } = kit;
@@ -33,10 +38,11 @@ function TutorialScreen({ T, frameRef, kit, onTone, onFinish }: TutorialProps) {
   const [phase, setPhase] = useState<Phase>("info");
   const [face, setFace] = useState("NORMAL");
   const [stats, setStats] = useState({ anger: T.tutorial.startAnger as number, social: T.advanced.socialMax as number, mental: T.advanced.mentalMax as number });
-  const [typed, setTyped] = useState("");
+  const [typedState, setTyped] = useState("");
+  const typed = typedState;
   const [composing, setComposing] = useState(false);
   const [feedback, setFeedback] = useState("");
-  const [calm, setCalm] = useState({ position: 0, direction: 1 });
+  const [rival, setRival] = useState(0); /* [수정 김홍경 11/17] 진정 레이스 상대 진행도(0~100%) */
   const [stareGauge, setStareGauge] = useState(0);
   const [feverIndex, setFeverIndex] = useState(0);
   const [feverY, setFeverY] = useState(FEVER_START_Y);
@@ -64,17 +70,21 @@ function TutorialScreen({ T, frameRef, kit, onTone, onFinish }: TutorialProps) {
     if (next === "penalty") { setStats((old) => ({ ...old, anger: T.game.angerThreshold, social: Math.max(0, old.social - T.advanced.socialTimeout) })); onTone(170, 0.11); }
     else onTone(440, 0.06);
   };
-  const begin = () => { setPhase("active"); setFeedback(""); setTyped(""); setFeverY(FEVER_START_Y); onTone(620, 0.08); };
+  const begin = () => { setPhase("active"); setFeedback(""); setTyped(""); setFeverY(FEVER_START_Y); setRival(0); onTone(620, 0.08); };
 
-  const submit = () => {
-    if (composing || phase !== "active") return;
+  const submit = (typedOverride?: string) => {
+    if ((composing && typedOverride === undefined) || phase !== "active") return;
+    const typed = typedOverride ?? typedState; /* [수정 김홍경 11/17] 피버는 Space 제출 시 값을 직접 넘김 */
     if (step === "typing") {
       if (countErrors(Text.tutorial.typingTarget, typed) <= T.tutorial.typos) {
         adjust({ mental: -T.advanced.mentalHit, anger: -T.advanced.angerSuccess, social: T.advanced.socialSuccess });
         succeed("SURPRISED", 740);
       } else { setFeedback(Text.tutorial.typingRetry); setTyped(""); onTone(170, 0.11); }
+    } else if (step === "calm") {
+      if (typed === CALM_TARGET) winRace();
+      else setFeedback(Text.ui.calmTypo);
     } else if (step === "fever") {
-      if (typed !== feverTarget) { setFeedback(Text.ui.typos); onTone(180, 0.08); return; }
+      if (typed.trim() !== feverTarget) { setFeedback(Text.ui.typos); setTyped(""); onTone(180, 0.08); return; }
       onTone(610, 0.08);
       setTyped("");
       setFeedback("");
@@ -84,12 +94,11 @@ function TutorialScreen({ T, frameRef, kit, onTone, onFinish }: TutorialProps) {
       } else { setFeverIndex(feverIndex + 1); setFeverY(FEVER_START_Y); }
     }
   };
-  const breathe = () => {
+  /* [수정 김홍경 11/17] 호흡 바늘(breathe) → 진정 레이스에서 먼저 도착 */
+  const winRace = () => {
     if (step !== "calm" || phase !== "active") return;
-    if (Math.abs(calm.position - T.minigame.calmCenter) <= T.tutorial.calmWindow / 2) {
-      adjust({ anger: -T.advanced.angerCalmSuccess });
-      succeed("SURPRISED", 760);
-    } else { setFeedback(Text.ui.calmFail); onTone(160, 0.13); }
+    adjust({ anger: -T.advanced.angerCalmSuccess });
+    succeed("SURPRISED", 760);
   };
   const tapStare = () => {
     if (step !== "stare" || phase !== "active") return;
@@ -100,17 +109,19 @@ function TutorialScreen({ T, frameRef, kit, onTone, onFinish }: TutorialProps) {
   };
 
   useEffect(() => {
-    if (phase === "active" && step === "calm") frameRef.current = (dt) => setCalm((old) => {
-      let position = old.position + old.direction * T.tutorial.calmSpeed * dt;
-      let direction = old.direction;
-      if (position > 100) { position = 200 - position; direction = -1; }
-      if (position < 0) { position = -position; direction = 1; }
-      return { position, direction };
-    });
+    if (phase === "active" && step === "calm") frameRef.current = (dt) => setRival((old) => Math.min(100, old + 100 / raceSeconds(CALM_TARGET, T.tutorial.calmRaceCpm) * dt));
     else if (phase === "active" && step === "fever") frameRef.current = (dt) => setFeverY((old) => old + (T.advanced.feverLine - FEVER_START_Y) / T.tutorial.feverFallSeconds * dt);
     else frameRef.current = null;
     return () => { frameRef.current = null; };
   }, [phase, step, frameRef, T]);
+  /* [추가 김홍경 11/17] 연습이라 상대가 먼저 도착해도 처음부터 다시 */
+  useEffect(() => {
+    if (phase !== "active" || step !== "calm" || rival < 100) return;
+    setRival(0);
+    setTyped("");
+    setFeedback(Text.tutorial.calmRetry);
+    onTone(160, 0.13);
+  }, [phase, step, rival, onTone]);
   useEffect(() => {
     if (phase !== "active" || step !== "fever" || feverY < T.advanced.feverLine) return;
     setFeverY(FEVER_START_Y);
@@ -129,7 +140,6 @@ function TutorialScreen({ T, frameRef, kit, onTone, onFinish }: TutorialProps) {
       if (event.code !== "Space" || phase !== "active" || document.activeElement instanceof HTMLInputElement) return;
       event.preventDefault();
       if (event.repeat) return;
-      if (step === "calm") breathe();
       if (step === "stare") tapStare();
     };
     window.addEventListener("keydown", onKeyDown);
@@ -141,7 +151,7 @@ function TutorialScreen({ T, frameRef, kit, onTone, onFinish }: TutorialProps) {
   };
   const answerForm = (target: string, className: string) => <form className={className} onSubmit={(event) => { event.preventDefault(); submit(); }}>
     <TypingPreview target={target} value={typed} composing={composing} />
-    <input autoFocus aria-label={Text.ui.placeholder} value={typed} onChange={(event) => { setTyped(event.target.value); setFeedback(""); }} onCompositionStart={() => setComposing(true)} onCompositionEnd={() => setComposing(false)} onKeyDown={onTextKey} placeholder={Text.ui.placeholder} />
+    <input autoFocus aria-label={Text.ui.placeholder} value={typed} onChange={(event) => { const value = event.target.value; /* [수정 김홍경 11/17] 피버에서는 Space로도 제출 */ if (step === "fever" && /\s$/.test(value) && value.trim()) { submit(value.trim()); return; } setTyped(step === "fever" ? value.trimStart() : value); setFeedback(""); if (step === "calm" && value === CALM_TARGET) winRace(); }} onCompositionStart={() => setComposing(true)} onCompositionEnd={() => setComposing(false)} onKeyDown={onTextKey} placeholder={Text.ui.placeholder} />
     <button type="submit" className="submit-button" disabled={composing}>{Text.ui.submit}</button>
   </form>;
 
@@ -186,11 +196,12 @@ function TutorialScreen({ T, frameRef, kit, onTone, onFinish }: TutorialProps) {
         </div>
       </>}
 
-      {step === "calm" && phase === "active" && <div className="minigame-shade calm-overlay"><div className="minigame-card pixel-panel">
-        <p className="event-kicker">{Text.ui.angerEventKicker}</p><h2>{Text.ui.calmTitle}</h2><p>{Text.ui.calmHelp}<br />{Text.tutorial.calmNote}</p>
-        <div className="calm-dial"><div className="calm-zone" style={{ left: `${T.minigame.calmCenter - T.tutorial.calmWindow / 2}%`, width: `${T.tutorial.calmWindow}%` }} /><i className="calm-needle" style={{ left: `${calm.position}%` }} /></div>
-        <div className="calm-labels"><span>{Text.ui.breathIn}</span><span>{Text.ui.breathOut}</span></div>
-        <button className="action-button" onClick={breathe}>{Text.ui.calmAction}</button>
+      {/* [수정 김홍경 11/17] 분노 조절 연습: 호흡 바늘 → 진정 레이스 */}
+      {step === "calm" && phase !== "result" && <div className="minigame-shade calm-overlay"><div className="minigame-card race-card pixel-panel">
+        <p className="event-kicker">{Text.ui.angerEventKicker}</p><h2>{Text.ui.calmTitle}</h2><p>{phase === "ready" ? Text.ui.calmReadyHint : Text.ui.calmHelp}<br />{Text.tutorial.calmNote}</p>
+        <CalmRace me={Text.battle.player} rival={Text.tutorial.opponent} goal={Text.ui.raceGoal} myProgress={phase === "ready" ? 0 : raceProgress(CALM_TARGET, typed)} rivalProgress={rival} />
+        <div className="race-sentence"><span>{Text.ui.target}</span>{CALM_TARGET}</div>
+        {phase === "ready" ? <button className="action-button ready-button" onClick={begin}>{Text.ui.readyStart} <b>↵</b></button> : answerForm(CALM_TARGET, "fever-form race-form")}
         <p className="inline-feedback">{feedback}</p>
       </div></div>}
 
@@ -204,7 +215,7 @@ function TutorialScreen({ T, frameRef, kit, onTone, onFinish }: TutorialProps) {
       {step === "fever" && phase !== "result" && <div className="fever-overlay">
         <div className="fever-top"><span>✦ {Text.ui.fever}</span><i>{Text.tutorial.feverCount.replace("{count}", String(feverIndex)).replace("{total}", String(FEVER_SENTENCES.length))}</i></div>
         <p className="fever-subtitle">「{Text.ui.feverSub}」</p>
-        <div className="fever-lane">{phase === "active" && <div className="falling-sentence" style={{ top: `${feverY}%` }}>{feverTarget}</div>}
+        <div className="fever-lane">{phase === "active" && <div key={feverIndex} className="falling-sentence falling-word" style={{ top: `${feverY}%`, left: `${feverLaneX(feverIndex)}%` }}>{feverTarget}</div>}
           <div className="dead-line" style={{ top: `${T.advanced.feverLine}%` }}><span>{Text.ui.deadLine}</span></div></div>
         <div className="fever-bottom"><p>{phase === "ready" ? Text.tutorial.feverReady : Text.tutorial.feverActive}</p>{phase === "ready" ? <button className="action-button ready-button" onClick={begin}>{Text.ui.readyStart} <b>↵</b></button> : answerForm(feverTarget, "fever-form")}<span className="fever-feedback">{feedback}</span></div>
       </div>}

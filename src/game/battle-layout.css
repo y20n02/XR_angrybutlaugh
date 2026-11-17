@@ -2,7 +2,7 @@
 .battle-plate { display: flex; align-items: center; gap: 14px; min-width: 0; padding: 7px 12px; border: 2px solid #e0c386; background: #171824e6; box-shadow: 3px 3px 0 #080911; }
 .plate-player { flex: 2; }
 .plate-opponent { flex: 1; order: -1; }
-.plate-name { flex: 0 0 auto; color: #f6e0af; font-size: clamp(15px, 1.3vw, 19px); font-weight: 700; }
+.plate-name { flex: 0 0 auto; color: #f6e0af; font-size: clamp(15px, calc(var(--vw) * 1.3), 19px); font-weight: 700; }
 
 .play-scene .scene-background { filter: sepia(0.6) brightness(0.6) contrast(0.95); }
 
@@ -24,29 +24,32 @@
 @keyframes player-step { 50% { transform: translate(-8px, -8px) scale(1.03); } }
 
 /* 상대 대사는 인물을 가리지 않게 오른쪽 위에 표시 */
-.battle-taunt { position: absolute; z-index: 9; top: 15%; right: 3%; width: 44%; margin: 0; color: #fff; font-family: var(--font-read); font-size: clamp(20px, 2.3vw, 32px); font-weight: 700; line-height: 1.4; text-align: right; text-shadow: 2px 2px 0 #17131b, 0 0 14px #000; word-break: keep-all; animation: dialogue-reveal 950ms steps(40, end) both; }
+.battle-taunt { position: absolute; z-index: 9; top: 15%; right: 3%; width: 44%; margin: 0; color: #fff; font-family: var(--font-read); font-size: clamp(20px, calc(var(--vw) * 2.3), 32px); font-weight: 700; line-height: 1.4; text-align: right; text-shadow: 2px 2px 0 #17131b, 0 0 14px #000; word-break: keep-all; animation: dialogue-reveal 950ms steps(40, end) both; }
 .play-scene .dialog-panel { background: #171824dd; }
 .play-scene .dialog-panel:not(.reaction-panel) { min-height: 0; padding: 8px 18px 6px; }
 .play-scene .dialog-panel .prompt-row { margin: 4px 0 6px; padding-top: 6px; padding-bottom: 6px; }
 
-@media (min-width: 901px) {
+/* [수정 김홍경 11/17] 무대가 1280×720 고정이라 창 크기 조건 대신 항상 적용 (원래 min-width: 901px) */
+@media all {
   .stare-overlay .stare-portrait { top: 9%; right: auto; bottom: 0; left: 4%; width: 46%; height: auto; opacity: 1; transform: none; }
   .stare-overlay .stare-portrait .has-art .portrait-art { inset: var(--bust-top) auto auto -73%; width: 246%; max-width: none; height: 246%; object-position: center top; }
   .stare-overlay .stare-portrait .portrait-shadow, .stare-overlay .stare-portrait .portrait-glint { display: none; }
   /* 카드가 두 인물의 얼굴을 가리지 않게 낮고 작게 */
   .stare-overlay .stare-card { padding: 12px 24px; margin-bottom: 2%; }
-  .stare-overlay .stare-card h2 { margin-bottom: 4px; font-size: clamp(22px, 2.6vw, 32px); }
+  .stare-overlay .stare-card h2 { margin-bottom: 4px; font-size: clamp(22px, calc(var(--vw) * 2.6), 32px); }
   .stare-overlay .stare-card > p { margin: 4px 0; }
   .stare-overlay .stare-card .event-kicker { margin-bottom: 4px; }
   .stare-overlay .stare-card .stare-meter { margin: 10px 0 5px; }
   .stare-overlay .stare-card .stare-meta { margin-bottom: 8px; }
 }
 
-@media (max-width: 900px) {
+/* [수정 김홍경 11/17] 무대가 1280×720 고정이라 창 크기 조건 대신 사용 안 함 (원래 max-width: 900px, 작은 화면용) */
+@media not all {
   .stare-overlay .player-back { display: none; }
 }
 
-@media (max-width: 620px) {
+/* [수정 김홍경 11/17] 무대가 1280×720 고정이라 창 크기 조건 대신 사용 안 함 (원래 max-width: 620px, 작은 화면용) */
+@media not all {
   .battle-plate { gap: 6px; padding: 4px 6px; }
   .plate-name { display: none; }
   .play-scene .stage-character { top: 15%; left: 0; width: 56%; }
