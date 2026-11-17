@@ -61,9 +61,9 @@ const T = DebugPanel.define({
     stareSeconds: { value: 5, min: 3, max: 10, step: 0.5, label: "기싸움 제한 시간 (초, 하)" },
     stareSecondsNormal: { value: 4.5, min: 2, max: 10, step: 0.5, label: "기싸움 제한 시간 (초, 중)" },
     stareSecondsHard: { value: 4, min: 2, max: 10, step: 0.5, label: "기싸움 제한 시간 (초, 상)" },
-    feverSpeed: { value: 12, min: 5, max: 28, step: 1, label: "피버 문장 낙하 속도 (높을수록 어려움)" },
-    /* [수정 김홍경 11/03] 피버(산성비) 문장 하나가 떨어지는 시간을 3초 늘림 */
-    feverExtraSeconds: { value: 3, min: 0, max: 10, step: 0.5, label: "피버 문장 1개 낙하 시간 추가 (초)" },
+    feverSpeed: { value: 12, min: 5, max: 28, step: 1, label: "(11/17부터 사용 안 함 · feverWordSeconds 사용) 피버 문장 낙하 속도" },
+    /* [수정 김홍경 11/17] 피버타임을 어절 단위로 바꾸면서 낙하 시간을 어절 1개 기준으로 다시 정함 (중 기준, 하는 더 느리고 상은 더 빠름) */
+    feverWordSeconds: { value: 3, min: 1, max: 10, step: 0.1, label: "피버 어절 1개 낙하 시간 (초, 중 기준)" },
     calmCenter: { value: 55, min: 35, max: 75, step: 1, label: "호흡 성공 구간 위치" },
   },
   ui: {
@@ -89,7 +89,7 @@ const T = DebugPanel.define({
     calmSpeed: { value: 42, min: 15, max: 130, step: 1, label: "튜토리얼 호흡 바늘 속도" },
     calmWindow: { value: 28, min: 8, max: 50, step: 1, label: "튜토리얼 호흡 성공 구간 폭" },
     stareGoal: { value: 8, min: 3, max: 30, step: 1, label: "튜토리얼 기싸움 연타 수" },
-    feverFallSeconds: { value: 15, min: 5, max: 30, step: 0.5, label: "튜토리얼 피버 문장 낙하 시간 (초)" },
+    feverFallSeconds: { value: 6, min: 5, max: 30, step: 0.5, label: "튜토리얼 피버 문장 낙하 시간 (초)" },
   },
   audio: {
     _label: "효과음",
@@ -128,9 +128,9 @@ const T = DebugPanel.define({
     angerFeverSuccess: { value: 20, min: 5, max: 40, step: 1, label: "피버 완벽 성공 분노 감소" },
     mentalFeverFull: { value: 40, min: 10, max: 60, step: 1, label: "피버 완벽 성공 상대 멘탈 감소" },
     socialFeverFull: { value: 10, min: 0, max: 25, step: 1, label: "피버 완벽 성공 사회생활력 회복" },
-    angerFeverPartial: { value: 5, min: 0, max: 20, step: 1, label: "피버 2문장 성공 분노 감소" },
-    mentalFeverPartial: { value: 20, min: 5, max: 40, step: 1, label: "피버 2문장 성공 상대 멘탈 감소" },
-    mentalFeverOne: { value: 10, min: 0, max: 25, step: 1, label: "피버 1문장 성공 상대 멘탈 감소" },
+    angerFeverPartial: { value: 5, min: 0, max: 20, step: 1, label: "피버 2/3 이상 성공 분노 감소" },
+    mentalFeverPartial: { value: 20, min: 5, max: 40, step: 1, label: "피버 2/3 이상 성공 상대 멘탈 감소" },
+    mentalFeverOne: { value: 10, min: 0, max: 25, step: 1, label: "피버 1/3 이상 성공 상대 멘탈 감소" },
     angerFeverFail: { value: 25, min: 5, max: 50, step: 1, label: "피버 전부 실패 분노 증가" },
     selectionX: { value: 0, min: -100, max: 100, step: 1, cssVar: "--selection-x", unit: "px", label: "상황·난이도 버튼 가로 위치" },
     selectionY: { value: 0, min: -80, max: 80, step: 1, cssVar: "--selection-y", unit: "px", label: "상황·난이도 버튼 세로 위치" },
@@ -152,6 +152,9 @@ const T = DebugPanel.define({
 /* [수정 김홍경 11/03] 난이도(0=하, 1=중, 2=상)별 기싸움 목표 연타 수·제한 시간 */
 const stareGoalFor = (level: number) => level === 0 ? T.minigame.stareGoal : level === 1 ? T.minigame.stareGoalNormal : T.minigame.stareGoalHard;
 const stareSecondsFor = (level: number) => level === 0 ? T.minigame.stareSeconds : level === 1 ? T.minigame.stareSecondsNormal : T.minigame.stareSecondsHard;
+/* [수정 김홍경 11/17] 피버타임: 반박 문장을 어절(띄어쓰기 단위)로 쪼개서 하나씩 떨어뜨림 */
+const feverWordsOf = (scenario: string, level: number): string[] => ((Text.scenarios as any)[scenario].levels[level].fever as string[]).flatMap((line) => line.split(/\s+/).filter(Boolean));
+
 const INTERNAL = { storageKey: "time-to-get-mad-save-v1", secondsPerMinute: 60, millisecondsPerSecond: 1000, typingUnit: 5, frameClampSeconds: 0.05, renderThrottleMs: 80, percentMax: 100, feverStartY: -14 };
 const TUTORIAL_STORAGE_KEY = "time-to-get-mad-tutorial-v1";
 const LAST_MAP_KEY = "time-to-get-mad-last-map-v1";
@@ -259,7 +262,7 @@ function titleCaseRank(session: Session) {
 }
 
 function getDeadline(session: Session) {
-  return session.mode === "fever" ? (Text.scenarios as any)[session.scenario].levels[session.level].fever[session.feverIndex] : "";
+  return session.mode === "fever" ? feverWordsOf(session.scenario, session.level)[session.feverIndex] : "";
 }
 
 function Portrait({ kind, face, small = false, level = 0 }: { kind: string; face: Face; small?: boolean; level?: number }) {
@@ -361,9 +364,9 @@ function GameScreen() {
         } else if (current.mode === "fever" && !current.waiting) {
           accumulatedDt = 0;
           const multiplier = current.level === 0 ? T.advanced.feverEasyScale : current.level === 1 ? 1 : T.advanced.feverHardScale;
-          /* [수정 김홍경 11/03] 원래 낙하 시간 + feverExtraSeconds(3초)가 되도록 속도를 다시 계산 */
+          /* [수정 김홍경 11/17] 어절 1개가 실패선까지 떨어지는 시간 = feverWordSeconds ÷ 난이도 보정 (하 약 3.8초 · 중 3초 · 상 2.5초) */
           const distance = T.advanced.feverLine - INTERNAL.feverStartY;
-          const fallSeconds = distance / (T.minigame.feverSpeed * multiplier) + T.minigame.feverExtraSeconds;
+          const fallSeconds = T.minigame.feverWordSeconds / multiplier;
           setSession((old) => old?.mode === "fever" ? { ...old, feverY: old.feverY + distance / fallSeconds * dt } : old);
         } else accumulatedDt = 0;
       } else if (dt && screenRef.current === "ending" && endingRef.current === "blanket") {
@@ -531,18 +534,18 @@ function GameScreen() {
     const updated = { ...s, feverIndex: index, feverY: INTERNAL.feverStartY, combo: 0, input: "", feedback: Text.ui.feverMiss };
     setTypedTarget("");
     playToneRef.current(150, 0.12);
-    if (index >= (Text.scenarios as any)[s.scenario].levels[s.level].fever.length) finishFever(updated);
+    if (index >= feverWordsOf(s.scenario, s.level).length) finishFever(updated);
     else setSession(updated);
   }, []);
 
   const finishFever = (s: Session) => {
     const count = s.feverHits;
-    const feverCount = (Text.scenarios as any)[s.scenario].levels[s.level].fever.length;
+    const feverCount = feverWordsOf(s.scenario, s.level).length;
     const next: Session = count === feverCount
       ? { ...s, mental: Math.max(0, s.mental - T.advanced.mentalFeverFull), anger: Math.max(0, s.anger - T.advanced.angerFeverSuccess), social: Math.min(T.advanced.socialMax, s.social + T.advanced.socialFeverFull), feverWon: true, face: "DEFEATED" }
-      : count === 2
+      : count / feverCount >= 2 / 3 /* [수정 김홍경 11/17] 어절 개수가 늘어서 성공 비율로 판정 */
         ? { ...s, mental: Math.max(0, s.mental - T.advanced.mentalFeverPartial), anger: Math.max(0, s.anger - T.advanced.angerFeverPartial), feverWon: false, face: "SURPRISED" }
-        : count === 1
+        : count / feverCount >= 1 / 3
           ? { ...s, mental: Math.max(0, s.mental - T.advanced.mentalFeverOne), feverWon: false, face: "ANNOYED" }
           : { ...s, anger: Math.min(T.advanced.angerMax, s.anger + T.advanced.angerFeverFail), feverWon: false, face: "SMIRK" };
     const reaction = count === feverCount ? Text.ui.perfectReaction : count > 0 ? (Text.scenarios as any)[s.scenario].levels[s.level].rounds[s.roundIndex].win : (Text.scenarios as any)[s.scenario].levels[s.level].rounds[s.roundIndex].typo;
@@ -612,7 +615,7 @@ function GameScreen() {
         const next = { ...s, feverIndex: newIndex, feverY: INTERNAL.feverStartY, feverHits: hits, combo, input: "", feedback: "" };
         setTypedTarget("");
         playTone(500 + combo * 110, 0.08);
-        if (newIndex >= (Text.scenarios as any)[s.scenario].levels[s.level].fever.length) finishFever(next);
+        if (newIndex >= feverWordsOf(s.scenario, s.level).length) finishFever(next);
         else setSession(next);
       } else {
         setSession({ ...s, feedback: Text.ui.typos });
@@ -815,7 +818,7 @@ function GameScreen() {
           </div></div>}
 
           {session.mode === "fever" && <div className="fever-overlay">
-            <div className="fever-top"><span>✦ {Text.ui.fever}</span><b>{Text.ui.combo} ×{session.combo}</b><i>{Text.ui.successCount.replace("{count}", String(session.feverHits))}</i></div>
+            <div className="fever-top"><span>✦ {Text.ui.fever}</span><b>{Text.ui.combo} ×{session.combo}</b><i>{Text.ui.successCount.replace("{count}", String(session.feverHits)).replace("{total}", String(feverWordsOf(session.scenario, session.level).length))}</i></div>
             <p className="fever-subtitle">「{Text.ui.feverSub}」</p>
             <div className="fever-lane">{!session.waiting && <div className="falling-sentence" style={{ top: `${session.feverY}%`, transform: `translateX(-50%) scale(${feverDifficulty})` }}>{getDeadline(session)}</div>}{/* [수정 김홍경 11/03] 시작 전에는 떨어질 문장을 숨김 */}
               <div className="dead-line" style={{ top: `${T.advanced.feverLine}%` }}><span>{Text.ui.deadLine}</span></div></div>

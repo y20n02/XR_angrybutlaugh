@@ -24,7 +24,8 @@ type Phase = "info" | "ready" | "active" | "result";
 const STEPS = ["welcome", "gauges", "typing", "penalty", "calm", "stare", "fever", "rules"] as const;
 type Step = (typeof STEPS)[number];
 const FEVER_START_Y = -14;
-const FEVER_SENTENCES = Text.tutorial.feverSentences;
+/* [수정 김홍경 11/17] 튜토리얼 피버도 어절 단위로 떨어짐 */
+const FEVER_SENTENCES = Text.tutorial.feverSentences.flatMap((line: string) => line.split(/\s+/).filter(Boolean));
 const firstPhase = (step: Step): Phase => step === "calm" ? "active" : step === "typing" || step === "stare" || step === "fever" ? "ready" : "info";
 
 function TutorialScreen({ T, frameRef, kit, onTone, onFinish }: TutorialProps) {
