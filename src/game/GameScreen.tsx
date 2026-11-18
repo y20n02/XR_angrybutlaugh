@@ -8,7 +8,6 @@ import "./battle-layout.css";
 import PlayerBack from "./PlayerBack";
 import IntroScreen from "./IntroScreen";
 import TutorialScreen from "./TutorialScreen";
-import CalmRace, { raceProgress, raceSeconds } from "./CalmRace"; /* [추가 김홍경 11/17] 분노 조절 → 진정 레이스 */
 import BriefingScreen from "./BriefingScreen";
 import TitleScreen from "./TitleScreen";
 import MapScreen, { MapCloseup } from "./MapScreen";
@@ -53,12 +52,9 @@ const T = DebugPanel.define({
   },
   minigame: {
     _label: "미니게임",
-    /* [수정 김홍경 11/17] 분노 조절이 '호흡 바늘'에서 '진정 레이스'로 바뀜 → 상대가 달리는 속도(분당 글자 수, 하/중/상) */
-    /* [수정 김홍경 11/18] 하 → 중 → 상으로 갈수록 상대가 확실히 빨라지게 간격을 벌림 (90/110/130 → 80/115/150)
-       15자 문장 기준 상대 도착: 하 약 11초 · 중 약 8초 · 상 약 6초 */
-    calmRaceCpm: { value: 80, min: 30, max: 250, step: 5, label: "진정 레이스 상대 속도 (분당 글자, 하)" },
-    calmRaceCpmNormal: { value: 115, min: 30, max: 250, step: 5, label: "진정 레이스 상대 속도 (분당 글자, 중)" },
-    calmRaceCpmHard: { value: 150, min: 30, max: 250, step: 5, label: "진정 레이스 상대 속도 (분당 글자, 상)" },
+    /* [수정 김홍경 11/18] main 합치기용: 진정 레이스는 빼고 원래 '호흡 바늘' 분노 조절로 되돌림 */
+    calmSpeed: { value: 68, min: 25, max: 130, step: 1, label: "호흡 바늘 속도 (높을수록 어려움)" },
+    calmWindow: { value: 18, min: 8, max: 35, step: 1, label: "호흡 성공 구간 폭" },
     /* [수정 김홍경 11/03] 기싸움 난이도별 목표 연타 수·제한 시간 (하 → 중 → 상으로 갈수록 어려움) */
     stareGoal: { value: 20, min: 8, max: 40, step: 1, label: "기싸움 성공 연타 수 (하)" },
     stareGoalNormal: { value: 24, min: 8, max: 45, step: 1, label: "기싸움 성공 연타 수 (중)" },
@@ -70,6 +66,7 @@ const T = DebugPanel.define({
        중(숙련) 기준 어절 1개 낙하 약 3.5초, 하는 ×0.78, 상은 ×1.2 속도 */
     feverSpeed: { value: 26, min: 5, max: 60, step: 1, label: "피버 어절 낙하 속도 (높을수록 어려움)" },
     feverExtraSeconds: { value: 0, min: 0, max: 10, step: 0.5, label: "피버 어절 1개 낙하 시간 추가 (초)" },
+    calmCenter: { value: 55, min: 35, max: 75, step: 1, label: "호흡 성공 구간 위치" },
   },
   ui: {
     _label: "조작부 위치와 크기",
@@ -91,7 +88,8 @@ const T = DebugPanel.define({
     introFinaleSeconds: { value: 2.2, min: 0.5, max: 6, step: 0.1, label: "인트로 마지막 문장 유지 시간 (초)" },
     typos: { value: 3, min: 0, max: 8, step: 1, label: "튜토리얼 허용 오타 수" },
     startAnger: { value: 30, min: 0, max: 60, step: 1, label: "튜토리얼 시작 분노" },
-    calmRaceCpm: { value: 45, min: 15, max: 200, step: 5, label: "튜토리얼 진정 레이스 상대 속도 (분당 글자)" }, /* [수정 김홍경 11/17] */
+    calmSpeed: { value: 42, min: 15, max: 130, step: 1, label: "튜토리얼 호흡 바늘 속도" },
+    calmWindow: { value: 28, min: 8, max: 50, step: 1, label: "튜토리얼 호흡 성공 구간 폭" },
     stareGoal: { value: 8, min: 3, max: 30, step: 1, label: "튜토리얼 기싸움 연타 수" },
     /* [수정 김홍경 11/17] 튜토리얼 피버도 어절 단위 → 낙하 시간 15초 → 6초 */
     feverFallSeconds: { value: 6, min: 2, max: 30, step: 0.5, label: "튜토리얼 피버 어절 낙하 시간 (초)" },
@@ -125,8 +123,9 @@ const T = DebugPanel.define({
     angerSuccess: { value: 10, min: 0, max: 30, step: 1, label: "성공 시 분노 감소" },
     socialSuccess: { value: 2, min: 0, max: 15, step: 1, label: "성공 시 사회생활력 회복" },
     mentalHit: { value: 20, min: 5, max: 40, step: 1, label: "반박 성공 시 상대 멘탈 감소" },
-    angerCalmSuccess: { value: 25, min: 5, max: 50, step: 1, label: "진정 레이스 승리 시 분노 감소" },
-    angerCalmMiss: { value: 15, min: 0, max: 40, step: 1, label: "진정 레이스 패배 시 분노 증가" },
+    calmFeedbackMs: { value: 800, min: 300, max: 1800, step: 50, label: "호흡 실패 안내 시간 (ms)" },
+    angerCalmSuccess: { value: 25, min: 5, max: 50, step: 1, label: "호흡 성공 시 분노 감소" },
+    angerCalmMiss: { value: 15, min: 0, max: 40, step: 1, label: "호흡 실패 시 분노 증가" },
     angerStareMiss: { value: 15, min: 0, max: 40, step: 1, label: "기싸움 실패 시 분노 증가" },
     mentalStareWin: { value: 20, min: 5, max: 40, step: 1, label: "기싸움 성공 상대 멘탈 감소" },
     angerFeverSuccess: { value: 20, min: 5, max: 40, step: 1, label: "피버 완벽 성공 분노 감소" },
@@ -155,9 +154,6 @@ const T = DebugPanel.define({
 
 /* [수정 김홍경 11/03] 난이도(0=하, 1=중, 2=상)별 기싸움 목표 연타 수·제한 시간 */
 const stareGoalFor = (level: number) => level === 0 ? T.minigame.stareGoal : level === 1 ? T.minigame.stareGoalNormal : T.minigame.stareGoalHard;
-/* [추가 김홍경 11/17] 진정 레이스: 난이도별 상대 속도, 이번에 칠 문장(라운드마다 바뀜) */
-const calmCpmFor = (level: number) => level === 0 ? T.minigame.calmRaceCpm : level === 1 ? T.minigame.calmRaceCpmNormal : T.minigame.calmRaceCpmHard;
-const calmSentenceFor = (completed: number, level: number) => { const list: string[] = Text.ui.calmSentences; return list[(completed + level * 2) % list.length]; };
 const stareSecondsFor = (level: number) => level === 0 ? T.minigame.stareSeconds : level === 1 ? T.minigame.stareSecondsNormal : T.minigame.stareSecondsHard;
 const INTERNAL = { storageKey: "time-to-get-mad-save-v1", secondsPerMinute: 60, millisecondsPerSecond: 1000, typingUnit: 5, frameClampSeconds: 0.05, renderThrottleMs: 80, percentMax: 100, feverStartY: -14 };
 /* [추가 김홍경 11/17] 게임 화면 기준 해상도 (game.css의 .screen-frame 크기와 같아야 함) */
@@ -323,6 +319,7 @@ function GameScreen() {
   const [session, setSession] = useState<Session | null>(null);
   const [typedTarget, setTypedTarget] = useState("");
   const [composing, setComposing] = useState(false);
+  const [calmMessage, setCalmMessage] = useState(""); /* [수정 김홍경 11/18] main 합치기용: 진정 레이스는 빼고 원래 '호흡 바늘' 분노 조절로 되돌림 */
   const [soundOn, setSoundOn] = useState(true);
   const [blanketInput, setBlanketInput] = useState("");
   const [blanketFeedback, setBlanketFeedback] = useState("");
@@ -369,11 +366,15 @@ function GameScreen() {
             accumulatedDt = 0;
             setSession((old) => old?.mode === "typing" ? { ...old, remaining: Math.max(0, old.remaining - step) } : old);
           }
-        } else if (current.mode === "calm" && !current.waiting) {
-          /* [수정 김홍경 11/17] 진정 레이스: calmPosition = 상대 진행도(0~100%), 시작 후 일정 속도로 전진 */
-          accumulatedDt = 0;
-          const seconds = raceSeconds(calmSentenceFor(current.completed, current.level), calmCpmFor(current.level));
-          setSession((old) => old?.mode === "calm" && !old.waiting ? { ...old, calmPosition: Math.min(INTERNAL.percentMax, old.calmPosition + INTERNAL.percentMax / seconds * dt) } : old);
+        } else if (current.mode === "calm") {
+          setSession((old) => {
+            if (!old || old.mode !== "calm") return old;
+            let position = old.calmPosition + old.calmDirection * T.minigame.calmSpeed * dt;
+            let direction = old.calmDirection;
+            if (position > INTERNAL.percentMax) { position = INTERNAL.percentMax - (position - INTERNAL.percentMax); direction = -1; }
+            if (position < 0) { position = -position; direction = 1; }
+            return { ...old, calmPosition: position, calmDirection: direction };
+          });
         } else if (current.mode === "stare" && !current.waiting) {
           accumulatedDt += dt;
           if (now - lastPaint > INTERNAL.renderThrottleMs) {
@@ -486,28 +487,9 @@ function GameScreen() {
     playTone(190, 0.22);
   };
 
-  /* [수정 김홍경 11/17] 진정 레이스도 시작 버튼(Enter)을 눌러야 상대가 달리기 시작 */
   const beginCalm = (next: Session) => {
-    setSession({ ...next, mode: "calm", calmConsumed: true, calmPosition: 0, calmDirection: 1, feedback: "", input: "", waiting: true });
-    setTypedTarget("");
-    setComposing(false);
-  };
-
-  /* [추가 김홍경 11/17] 진정 레이스 결과: 먼저 도착하면 분노 감소, 상대가 먼저면 분노 증가 */
-  const finishCalm = (won: boolean) => {
-    const s = sessionRef.current;
-    if (!s || s.mode !== "calm" || s.waiting) return;
-    setTypedTarget("");
-    setComposing(false);
-    if (won) {
-      const anger = Math.max(0, s.anger - T.advanced.angerCalmSuccess);
-      playToneRef.current(760, 0.15);
-      startReaction({ ...s, anger, calmConsumed: anger >= T.game.angerThreshold, face: "SURPRISED" }, Text.ui.calmSuccess, "SURPRISED", "event");
-    } else {
-      const next: Session = { ...s, anger: Math.min(T.advanced.angerMax, s.anger + T.advanced.angerCalmMiss), face: "SMIRK" };
-      playToneRef.current(160, 0.13);
-      if (!clearResult(next)) startReaction(next, Text.ui.calmFail, "SMIRK", "event");
-    }
+    setCalmMessage("");
+    setSession({ ...next, mode: "calm", calmConsumed: true, calmPosition: 0, calmDirection: 1, feedback: "" });
   };
 
   const finishWin = (next: Session) => {
@@ -597,9 +579,6 @@ function GameScreen() {
     if (screen === "play" && session?.mode === "typing" && session.remaining <= 0) handleTimeout();
   }, [screen, session?.mode, session?.remaining, handleTimeout]);
   useEffect(() => {
-    if (screen === "play" && session?.mode === "calm" && !session.waiting && session.calmPosition >= INTERNAL.percentMax) finishCalm(false);
-  }, [screen, session?.mode, session?.calmPosition]);
-  useEffect(() => {
     if (screen === "play" && session?.mode === "fever" && session.feverY >= T.advanced.feverLine) handleFeverMiss();
   }, [screen, session?.mode, session?.feverY, handleFeverMiss]);
   useEffect(() => {
@@ -618,13 +597,6 @@ function GameScreen() {
 
   /* [수정 김홍경 11/17] 피버에서 Space로도 제출할 수 있게 입력값을 직접 넘길 수 있음 */
   const submitAnswer = (typedOverride?: string) => {
-    /* [추가 김홍경 11/17] 진정 레이스에서 Enter: 문장이 맞으면 도착, 틀리면 고치라고 안내 */
-    if (session?.mode === "calm" && !session.waiting) {
-      if (composing) return;
-      if (typedTarget === calmSentenceFor(session.completed, session.level)) finishCalm(true);
-      else setSession({ ...session, feedback: Text.ui.calmTypo });
-      return;
-    }
     if (!session || (session.mode !== "typing" && session.mode !== "fever") || session.waiting) return;
     if (composing && typedOverride === undefined) return;
     const s = session;
@@ -713,12 +685,30 @@ function GameScreen() {
       if (event.code !== "Space" || screenRef.current !== "play") return;
       if (document.activeElement instanceof HTMLInputElement) return;
       const current = sessionRef.current;
+      if (current?.mode === "calm") { event.preventDefault(); doCalm(current.calmPosition); }
       /* [수정 김홍경 11/03] Space를 꾹 누르고 있을 때 자동 반복 입력(repeat)은 무시 → 한 번 누를 때 1칸만 올라감 */
       if (current?.mode === "stare") { event.preventDefault(); if (!event.repeat) tapStare(); }
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   });
+
+  const doCalm = (position: number) => {
+    if (!session || session.mode !== "calm") return;
+    const inZone = Math.abs(position - T.minigame.calmCenter) <= T.minigame.calmWindow / 2;
+    let next: Session;
+    if (inZone) {
+      const anger = Math.max(0, session.anger - T.advanced.angerCalmSuccess);
+      next = { ...session, mode: "reaction", anger, calmConsumed: anger >= T.game.angerThreshold, face: "SURPRISED", feedback: Text.ui.calmSuccess, reactionKind: "event" };
+      setCalmMessage(Text.ui.calmSuccess); playTone(760, 0.15);
+    } else {
+      next = { ...session, anger: Math.min(T.advanced.angerMax, session.anger + T.advanced.angerCalmMiss), face: "SMIRK" };
+      setCalmMessage(Text.ui.calmFail); playTone(160, 0.13);
+    }
+    if (clearResult(next)) return;
+    if (inZone) startReaction(next, Text.ui.calmSuccess, "SURPRISED", "event");
+    else { setSession({ ...next, mode: "calm", feedback: Text.ui.calmFail }); window.setTimeout(() => setCalmMessage(""), T.advanced.calmFeedbackMs); }
+  };
 
   const beginBlanket = () => { setEnding("night"); setBlanketFeedback(""); playTone(320, 0.12); };
   /* [추가 김홍경 11/17] 밤 장면 → 이불킥 복기 시작 (버튼·Enter 공용) */
@@ -849,18 +839,13 @@ function GameScreen() {
             <div className="reaction-controls"><span>{Text.ui.curseCount.replace("{count}", String(session.curses))}</span><button className="action-button" onClick={continueReaction}>{Text.ui.next} <b>↵</b>{/* [수정 김홍경 11/03] Enter로 넘어간다는 표시: ▶ → ↵ */}</button></div>
           </div>}
 
-          {/* [수정 김홍경 11/17] 분노 조절: 호흡 바늘 → 상대와 '진정 레이스' (문장을 먼저 끝까지 치면 승리) */}
-          {session.mode === "calm" && (() => { const calmTarget = calmSentenceFor(session.completed, session.level); return <div className="minigame-shade calm-overlay"><div className="minigame-card race-card pixel-panel">
-            <p className="event-kicker">{Text.ui.angerEventKicker}</p><h2>{Text.ui.calmTitle}</h2><p>{Text.ui.calmHelp}</p>{/* [수정 김홍경 11/18] 설명을 한 줄로 단순화 */}
-            <CalmRace me={Text.battle.player} rival={opponentName(session.scenario, session.level)} goal={Text.ui.raceGoal} myProgress={session.waiting ? 0 : raceProgress(calmTarget, typedTarget)} rivalProgress={session.calmPosition} />
-            <div className="race-sentence"><span>{Text.ui.target}</span>{calmTarget}</div>
-            {session.waiting ? <button className="action-button ready-button" onClick={startWaiting}>{Text.ui.readyStart} <b>↵</b></button> : <form className="fever-form race-form" onSubmit={(event) => { event.preventDefault(); submitAnswer(); }}>
-              <TypingPreview target={calmTarget} value={typedTarget} composing={composing} />
-              <input autoFocus aria-label={Text.ui.placeholder} value={typedTarget} onChange={(event) => { const value = event.target.value; setTypedTarget(value); if (value === calmTarget) { finishCalm(true); return; } setSession((old) => old ? { ...old, input: value, feedback: "" } : old); }} onCompositionStart={() => setComposing(true)} onCompositionEnd={() => setComposing(false)} onKeyDown={onTextKey} placeholder={Text.ui.placeholder} />
-              <button className="submit-button" disabled={composing}>{Text.ui.submit}</button>
-            </form>}
-            <p className="inline-feedback">{session.feedback}</p>
-          </div></div>; })()}
+          {session.mode === "calm" && <div className="minigame-shade calm-overlay"><div className="minigame-card pixel-panel">
+            <p className="event-kicker">{Text.ui.angerEventKicker}</p><h2>{Text.ui.calmTitle}</h2><p>{Text.ui.calmHelp}</p>
+            <div className="calm-dial"><div className="calm-zone" style={{ left: `${T.minigame.calmCenter - T.minigame.calmWindow / 2}%`, width: `${T.minigame.calmWindow}%` }} /><i className="calm-needle" style={{ left: `${session.calmPosition}%` }} /></div>
+            <div className="calm-labels"><span>{Text.ui.breathIn}</span><span>{Text.ui.breathOut}</span></div>
+            <button className="action-button" onClick={() => doCalm(session.calmPosition)}>{Text.ui.calmAction}</button>
+            {calmMessage && <p className="inline-feedback">{calmMessage}</p>}
+          </div></div>}
 
           {session.mode === "stare" && <div className="minigame-shade stare-overlay"><div className="stare-backdrop">{Text.ui.stareBackdrop}</div><div className="stare-portrait"><Portrait key={`${character}-${session.level}`} kind={character} level={session.level} face="ANGRY" /></div><PlayerBack kind={character} gender={playerGender} /><div className="minigame-card stare-card pixel-panel">
             <p className="event-kicker">{Text.ui.stareEventKicker}</p><h2>{Text.ui.stareTitle}</h2><p>{Text.ui.stareHelp.replace("{seconds}", String(stareSecondsFor(session.level))).replace("{goal}", String(stareGoalFor(session.level)))}</p><div className="stare-meter"><i style={{ width: `${Math.min(100, session.stareGauge / stareGoalFor(session.level) * 100)}%` }} /></div>

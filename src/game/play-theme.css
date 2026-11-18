@@ -180,30 +180,3 @@ button:focus-visible, input:focus-visible { outline-color: var(--ui-gold); }
 .briefing-portrait .has-art .portrait-art { inset: -26% auto auto -195%; width: 490%; height: 490%; max-width: none; object-position: center top; }
 .briefing-portrait .portrait.shop.lv-0.has-art .portrait-art { inset: -16% auto auto -105%; width: 310%; height: 310%; }
 
-/* [추가 김홍경 11/17] 분노 조절 '진정 레이스' (호흡 바늘 대체) */
-.race-card { width: min(860px, 92%); }
-.race-track { display: grid; gap: 10px; margin: 18px 0 14px; }
-.race-lane { display: grid; grid-template-columns: 7.5em 1fr 3.2em; align-items: center; gap: 10px; }
-.race-name { overflow: hidden; color: var(--ui-gold, #f2d18a); font-size: 14px; font-weight: 900; text-align: right; text-overflow: ellipsis; white-space: nowrap; }
-.race-rival .race-name { color: var(--ui-pink, #ff8aa6); }
-.race-road { position: relative; height: 30px; border: 3px solid var(--ui-ink, #090912); background: repeating-linear-gradient(90deg, #1d1b3a 0 18px, #24224a 18px 36px); box-shadow: 0 0 0 2px var(--ui-frame-mid, #6b5d8f); }
-.race-road::after { position: absolute; top: 0; right: 0; bottom: 0; width: 10px; background: repeating-linear-gradient(180deg, #fff 0 6px, #111 6px 12px); content: ""; }
-.race-fill { position: absolute; top: 0; bottom: 0; left: 0; background: linear-gradient(90deg, #8be0b044, #8be0b0aa); transition: width 0.08s linear; }
-.race-rival .race-fill { background: linear-gradient(90deg, #ff8aa644, #ff8aa6aa); }
-.race-runner { position: absolute; z-index: 2; top: 50%; color: #8be0b0; font-size: 20px; line-height: 1; text-shadow: 2px 2px 0 var(--ui-ink, #090912); transform: translate(-50%, -50%); transition: left 0.08s linear; }
-.race-rival .race-runner { color: var(--ui-pink, #ff8aa6); }
-.race-goal { position: absolute; top: 50%; right: 14px; color: #ffffffaa; font-size: 11px; font-weight: 900; letter-spacing: 0.12em; transform: translateY(-50%); }
-.race-percent { color: var(--ui-muted, #b8b09f); font-size: 13px; text-align: left; }
-.race-sentence { margin: 0 0 12px; padding: 10px 14px; border: 2px solid var(--ui-gold, #f2d18a); background: #1a1834cc; color: #fff4d6; font-size: clamp(17px, calc(var(--vw) * 1.8), 23px); font-weight: 900; }
-.race-sentence span { margin-right: 10px; color: var(--ui-gold, #f2d18a); font-size: 12px; letter-spacing: 0.08em; vertical-align: middle; }
-.race-card .race-form { width: 100%; }
-/* [수정 김홍경 11/17] 무대가 1280×720 고정이라 창 크기 조건 대신 사용 안 함 (원래 max-width: 640px, 작은 화면용) */
-@media not all {
-  .race-lane { grid-template-columns: 4.5em 1fr 2.6em; gap: 6px; }
-  .race-name { font-size: 12px; }
-}
-/* [추가 김홍경 11/18] 진정 레이스 긴박 연출: 상대가 앞서며 70%를 넘으면 상대 레인이 빨갛게 깜빡임 */
-.race-urgent .race-rival .race-road { animation: race-alarm 0.5s steps(2) infinite; }
-.race-urgent .race-rival .race-percent { color: var(--ui-red, #ff6c72); font-weight: 900; }
-@keyframes race-alarm { 50% { box-shadow: 0 0 0 2px var(--ui-red, #ff6c72), 0 0 14px var(--ui-red, #ff6c72); } }
-@media (prefers-reduced-motion: reduce) { .race-urgent .race-rival .race-road { animation: none; box-shadow: 0 0 0 2px var(--ui-red, #ff6c72); } }
