@@ -35,8 +35,10 @@ function Lane({ name, progress, kind, goal }: LaneProps) {
 }
 
 export default function CalmRace({ me, rival, goal, myProgress, rivalProgress }: { me: string; rival: string; goal: string; myProgress: number; rivalProgress: number }) {
+  /* [추가 김홍경 11/18] 상대가 나보다 앞서고 70%를 넘으면 상대 레인이 빨갛게 깜빡여 긴박감을 줌 */
+  const urgent = rivalProgress >= 70 && rivalProgress > myProgress;
   return (
-    <div className="race-track" aria-label={`${me} ${Math.floor(myProgress)}%, ${rival} ${Math.floor(rivalProgress)}%`}>
+    <div className={`race-track${urgent ? " race-urgent" : ""}`} aria-label={`${me} ${Math.floor(myProgress)}%, ${rival} ${Math.floor(rivalProgress)}%`}>
       <Lane name={me} progress={myProgress} kind="me" goal={goal} />
       <Lane name={rival} progress={rivalProgress} kind="rival" goal={goal} />
     </div>

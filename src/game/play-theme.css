@@ -202,3 +202,8 @@ button:focus-visible, input:focus-visible { outline-color: var(--ui-gold); }
   .race-lane { grid-template-columns: 4.5em 1fr 2.6em; gap: 6px; }
   .race-name { font-size: 12px; }
 }
+/* [추가 김홍경 11/18] 진정 레이스 긴박 연출: 상대가 앞서며 70%를 넘으면 상대 레인이 빨갛게 깜빡임 */
+.race-urgent .race-rival .race-road { animation: race-alarm 0.5s steps(2) infinite; }
+.race-urgent .race-rival .race-percent { color: var(--ui-red, #ff6c72); font-weight: 900; }
+@keyframes race-alarm { 50% { box-shadow: 0 0 0 2px var(--ui-red, #ff6c72), 0 0 14px var(--ui-red, #ff6c72); } }
+@media (prefers-reduced-motion: reduce) { .race-urgent .race-rival .race-road { animation: none; box-shadow: 0 0 0 2px var(--ui-red, #ff6c72); } }

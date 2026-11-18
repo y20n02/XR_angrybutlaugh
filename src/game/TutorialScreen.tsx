@@ -198,7 +198,7 @@ function TutorialScreen({ T, frameRef, kit, onTone, onFinish }: TutorialProps) {
 
       {/* [수정 김홍경 11/17] 분노 조절 연습: 호흡 바늘 → 진정 레이스 */}
       {step === "calm" && phase !== "result" && <div className="minigame-shade calm-overlay"><div className="minigame-card race-card pixel-panel">
-        <p className="event-kicker">{Text.ui.angerEventKicker}</p><h2>{Text.ui.calmTitle}</h2><p>{phase === "ready" ? Text.ui.calmReadyHint : Text.ui.calmHelp}<br />{Text.tutorial.calmNote}</p>
+        <p className="event-kicker">{Text.ui.angerEventKicker}</p><h2>{Text.ui.calmTitle}</h2><p>{Text.ui.calmHelp}<br />{Text.tutorial.calmNote}</p>{/* [수정 김홍경 11/18] 설명 단순화 */}
         <CalmRace me={Text.battle.player} rival={Text.tutorial.opponent} goal={Text.ui.raceGoal} myProgress={phase === "ready" ? 0 : raceProgress(CALM_TARGET, typed)} rivalProgress={rival} />
         <div className="race-sentence"><span>{Text.ui.target}</span>{CALM_TARGET}</div>
         {phase === "ready" ? <button className="action-button ready-button" onClick={begin}>{Text.ui.readyStart} <b>↵</b></button> : answerForm(CALM_TARGET, "fever-form race-form")}

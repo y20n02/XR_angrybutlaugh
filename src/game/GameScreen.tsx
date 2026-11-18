@@ -54,9 +54,11 @@ const T = DebugPanel.define({
   minigame: {
     _label: "미니게임",
     /* [수정 김홍경 11/17] 분노 조절이 '호흡 바늘'에서 '진정 레이스'로 바뀜 → 상대가 달리는 속도(분당 글자 수, 하/중/상) */
-    calmRaceCpm: { value: 90, min: 30, max: 250, step: 5, label: "진정 레이스 상대 속도 (분당 글자, 하)" },
-    calmRaceCpmNormal: { value: 110, min: 30, max: 250, step: 5, label: "진정 레이스 상대 속도 (분당 글자, 중)" },
-    calmRaceCpmHard: { value: 130, min: 30, max: 250, step: 5, label: "진정 레이스 상대 속도 (분당 글자, 상)" },
+    /* [수정 김홍경 11/18] 하 → 중 → 상으로 갈수록 상대가 확실히 빨라지게 간격을 벌림 (90/110/130 → 80/115/150)
+       15자 문장 기준 상대 도착: 하 약 11초 · 중 약 8초 · 상 약 6초 */
+    calmRaceCpm: { value: 80, min: 30, max: 250, step: 5, label: "진정 레이스 상대 속도 (분당 글자, 하)" },
+    calmRaceCpmNormal: { value: 115, min: 30, max: 250, step: 5, label: "진정 레이스 상대 속도 (분당 글자, 중)" },
+    calmRaceCpmHard: { value: 150, min: 30, max: 250, step: 5, label: "진정 레이스 상대 속도 (분당 글자, 상)" },
     /* [수정 김홍경 11/03] 기싸움 난이도별 목표 연타 수·제한 시간 (하 → 중 → 상으로 갈수록 어려움) */
     stareGoal: { value: 20, min: 8, max: 40, step: 1, label: "기싸움 성공 연타 수 (하)" },
     stareGoalNormal: { value: 24, min: 8, max: 45, step: 1, label: "기싸움 성공 연타 수 (중)" },
@@ -849,7 +851,7 @@ function GameScreen() {
 
           {/* [수정 김홍경 11/17] 분노 조절: 호흡 바늘 → 상대와 '진정 레이스' (문장을 먼저 끝까지 치면 승리) */}
           {session.mode === "calm" && (() => { const calmTarget = calmSentenceFor(session.completed, session.level); return <div className="minigame-shade calm-overlay"><div className="minigame-card race-card pixel-panel">
-            <p className="event-kicker">{Text.ui.angerEventKicker}</p><h2>{Text.ui.calmTitle}</h2><p>{session.waiting ? Text.ui.calmReadyHint : Text.ui.calmHelp}</p>
+            <p className="event-kicker">{Text.ui.angerEventKicker}</p><h2>{Text.ui.calmTitle}</h2><p>{Text.ui.calmHelp}</p>{/* [수정 김홍경 11/18] 설명을 한 줄로 단순화 */}
             <CalmRace me={Text.battle.player} rival={opponentName(session.scenario, session.level)} goal={Text.ui.raceGoal} myProgress={session.waiting ? 0 : raceProgress(calmTarget, typedTarget)} rivalProgress={session.calmPosition} />
             <div className="race-sentence"><span>{Text.ui.target}</span>{calmTarget}</div>
             {session.waiting ? <button className="action-button ready-button" onClick={startWaiting}>{Text.ui.readyStart} <b>↵</b></button> : <form className="fever-form race-form" onSubmit={(event) => { event.preventDefault(); submitAnswer(); }}>
