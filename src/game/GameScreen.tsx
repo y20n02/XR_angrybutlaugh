@@ -509,7 +509,7 @@ function GameScreen() {
       startReaction(next, slip ? (Text.evaluation.reactions as Record<string, string>)[slip] : round.win, slip ? "SMIRK" : "SURPRISED", "round");
       playTone(740, 0.1);
     } else {
-      const next = { ...measured, anger: Math.min(T.advanced.angerMax, s.anger + T.advanced.angerTypo), misses: [...s.misses, round.target] };
+      const next = { ...measured, anger: Math.min(T.advanced.angerMax, s.anger + T.advanced.angerTypo) };
       if (!clearResult(next)) startReaction(next, result.route === "semantic" ? Text.ui.semanticMiss : round.typo, "SMIRK", "round");
       playTone(170, 0.11);
     }

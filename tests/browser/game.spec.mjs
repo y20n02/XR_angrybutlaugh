@@ -128,9 +128,19 @@ test('late semantic response cannot change another playthrough after Escape', as
 test('all rejected replies cannot unlock a win even after winning mini-games', async ({ page }) => {
   await boot(page); await start(page);
   await page.route('**/api/evaluate', route => route.fulfill({ json: { score: 0.2, accepted: false } }));
-  for (let i = 0; i < 3; i++) { await send(page, '그냥 전부 제 잘못입니다'); await expect(page.locator('.reaction-panel')).toBeVisible(); await next(page); }
+  let lastTarget;
+  for (let i = 0; i < 3; i++) {
+    lastTarget = await page.locator('.prompt-sentence').innerText();
+    await send(page, '그냥 전부 제 잘못입니다');
+    await expect(page.locator('.reaction-panel')).toBeVisible();
+    await next(page);
+  }
   await expect(page.locator('.over-content')).toBeVisible();
   await expect(page.locator('.over-reason')).toContainText('충분히 전달');
+  await page.locator('.over-content button').click();
+  await page.locator('.night-narrative button').click();
+  // Original behavior: ordinary misses are not stored; no stored misses falls back to the last target.
+  await expect(page.locator('.blanket-memory')).toHaveText(`“${lastTarget}”`);
 });
 test('curse limit loses exactly once and blanket practice remains playable', async ({ page }) => {
   await boot(page); await start(page);
