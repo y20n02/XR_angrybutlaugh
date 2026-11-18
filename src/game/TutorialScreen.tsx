@@ -132,8 +132,10 @@ function TutorialScreen({ T, frameRef, kit, onTone, onFinish }: TutorialProps) {
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
+      /* [수정 김홍경 11/18] 건너뛰기(ESC)는 한글 조합 중이어도 항상 동작하게 조합 검사보다 먼저 처리
+         (입력창에서 한글을 치다가 ESC를 누르면 무시돼서 튜토리얼에서 못 나가던 문제) */
+      if (event.code === "Escape" || event.key === "Escape") { event.preventDefault(); onFinish(); return; }
       if (event.isComposing || event.defaultPrevented) return;
-      if (event.code === "Escape") { event.preventDefault(); onFinish(); return; }
       const isEnter = event.key === "Enter" || event.code === "NumpadEnter";
       if (isEnter && !event.repeat && (phase === "info" || phase === "result")) { event.preventDefault(); goNext(); return; }
       if (!event.repeat && phase === "ready" && (isEnter || (event.code === "Space" && step === "stare"))) { event.preventDefault(); begin(); return; }
