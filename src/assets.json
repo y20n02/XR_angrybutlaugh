@@ -17,14 +17,14 @@
       "metadata": { "style": "anime", "transparent": true, "scenario": "shop" }
     },
     "office-0": { "url": "characters/office-0.webp", "description": "회사 하 · 동기" },
-    "office-1": { "url": "characters/office-1.webp", "description": "회사 중 · 대리" },
-    "office-2": { "url": "characters/office-2.webp", "description": "회사 상 · 선임" },
+    "office-1": { "url": "characters/office-1.webp", "description": "회사 중 · 박과장" },
+    "office-2": { "url": "characters/office-2.webp", "description": "회사 상 · 최부장" },
     "team-0": { "url": "characters/team-0.webp", "description": "학교 하 · 후드 남학생" },
     "team-1": { "url": "characters/team-1.webp", "description": "학교 중 · 금발 여학생" },
     "team-2": { "url": "characters/team-2.webp", "description": "학교 상 · 안경 남학생" },
-    "shop-0": { "url": "characters/shop-0.webp", "description": "카페 하 · 커플 진상" },
-    "shop-1": { "url": "characters/shop-1.webp", "description": "카페 중 · 아줌마" },
-    "shop-2": { "url": "characters/shop-2.webp", "description": "카페 상 · 아저씨" }
+    "shop-0": { "url": "characters/shop-0.webp", "description": "카페 하 · 중년 남성 손님" },
+    "shop-1": { "url": "characters/shop-1.webp", "description": "카페 중 · 중년 여성 손님" },
+    "shop-2": { "url": "characters/shop-2.webp", "description": "카페 상 · 진상 커플" }
   },
   "players": {
     "f": { "front": "characters/player-f-front.webp", "back": "characters/player-f-back.webp", "description": "여자 주인공" },

@@ -27,7 +27,7 @@ export type MapDef = {
   palette: Palette;
   rightWindow: boolean;
   props: Prop[];
-  /* partner: 옆 칸에 함께 서 있는 사람(커플 진상). 두 칸을 같이 차지하고 함께 움직임 */
+  /* partner: 옆 칸에 함께 서 있는 사람(카페 상 · 진상 커플). 두 칸을 같이 차지하고 함께 움직임 */
   npcs: { x: number; y: number; dir: Dir; look: Look; partner?: Look }[];
   start: { x: number; y: number; dir: Dir };
 };
@@ -118,15 +118,20 @@ export const MAPS: Record<string, MapDef> = {
       { t: "door", x: 3, y: 1, w: 2, h: 1 },
       { t: "fridge", x: 7, y: 1, w: 8, h: 2 }, { t: "plant", x: 16, y: 2 },
       { t: "shelf", x: 1, y: 3, w: 1, h: 4 },
-      { t: "stand", x: 4, y: 5, w: 6, h: 1 }, { t: "stand", x: 4, y: 8, w: 6, h: 1 }, { t: "stand", x: 4, y: 11, w: 6, h: 1 },
+      /* [수정 김홍경 11/25] 가게 → 카페: 진열대(stand) 대신 컵이 놓인 2인용 테이블과 의자 */
+      { t: "table", x: 3, y: 5, w: 2, h: 1 }, { t: "chair", x: 2, y: 5 }, { t: "chair", x: 5, y: 5 },
+      { t: "table", x: 3, y: 9, w: 2, h: 1 }, { t: "chair", x: 2, y: 9 }, { t: "chair", x: 5, y: 9 },
+      { t: "table", x: 7, y: 7, w: 2, h: 1 }, { t: "chair", x: 6, y: 7 }, { t: "chair", x: 9, y: 7 },
+      { t: "lamp", x: 8, y: 11 },
       { t: "counter", x: 16, y: 6, w: 5, h: 2 }, { t: "register", x: 17, y: 6 }, { t: "cabinet", x: 21, y: 3, w: 1, h: 3 },
       { t: "rug", x: 15, y: 9, w: 7, h: 2, walk: true },
       { t: "water", x: 12, y: 6 }, { t: "plant", x: 12, y: 11 }, { t: "stand", x: 16, y: 12, w: 4, h: 1 },
     ],
+    /* [수정 김홍경 11/25] 대본 v2 순서: 하 = 중년 남성 손님, 중 = 중년 여성 손님, 상 = 진상 커플 (커플과 아저씨 자리를 맞바꿈) */
     npcs: [
-      { x: 11, y: 4, dir: "down", look: { hairStyle: "long", hair: "#3a2a24", skin: "#f1c39c", shirt: "#e6d7bc", tie: "#e6d7bc", pants: "#5a4434", bottom: "longskirt", shoes: "#5a4a44" }, partner: { hairStyle: "messy", hair: "#1f1a24", skin: "#f1c39c", shirt: "#2a2428", tie: "#2a2428", pants: "#6a7690", shoes: "#e6e2dc" } },
+      { x: 11, y: 4, dir: "down", look: { hairStyle: "spiky", hair: "#1f1a24", skin: "#d9a07a", jacket: "#2a2428", shirt: "#9a8678", tie: "#9a8678", pants: "#6a5240", shoes: "#4a3024" } },
       { x: 11, y: 9, dir: "left", look: { hairStyle: "curly", hair: "#5a3a26", skin: "#e9b88f", shirt: "#b0844a", pattern: "#4a2e1a", tie: "#8a2a34", pants: "#25232a" } },
-      { x: 18, y: 9, dir: "up", look: { hairStyle: "spiky", hair: "#1f1a24", skin: "#d9a07a", jacket: "#2a2428", shirt: "#9a8678", tie: "#9a8678", pants: "#6a5240", shoes: "#4a3024" } },
+      { x: 18, y: 9, dir: "up", look: { hairStyle: "long", hair: "#3a2a24", skin: "#f1c39c", shirt: "#e6d7bc", tie: "#e6d7bc", pants: "#5a4434", bottom: "longskirt", shoes: "#5a4a44" }, partner: { hairStyle: "messy", hair: "#1f1a24", skin: "#f1c39c", shirt: "#2a2428", tie: "#2a2428", pants: "#6a7690", shoes: "#e6e2dc" } },
     ],
   },
 };
