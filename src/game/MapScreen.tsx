@@ -356,6 +356,7 @@ export default function MapScreen({ mapId, save, onChangeMap, onTalk, onTitle, o
   const def = MAPS[mapId];
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const player = useRef<Actor | null>(null);
+  const playerTagRef = useRef<HTMLDivElement | null>(null); /* [추가 김홍경 11/25] 주인공 '나' 표시 */
   const walkers = useRef<Walker[]>(makeWalkers(mapId));
   const tagRefs = useRef<(HTMLDivElement | null)[]>([]);
   const held = useRef<Dir[]>([]);
@@ -473,6 +474,9 @@ export default function MapScreen({ mapId, save, onChangeMap, onTalk, onTitle, o
       });
       const walkFrame = p.moving ? Math.floor(time / (STEP_MS / 2)) % 2 : 0;
       drawList.push({ py: p.py, draw: () => drawPerson(ctx, playerLook(), p.dir, walkFrame, p.px, p.py, walkFrame, line) });
+      /* [추가 김홍경 11/25] 주인공 머리 위 '나' 표시를 매 프레임 주인공 위치로 옮김 */
+      const me = playerTagRef.current;
+      if (me) { me.style.left = `${(p.px + TILE / 2) / W * 100}%`; me.style.top = `${(TOP + p.py - 5) / H * 100}%`; }
       drawList.sort((a, b) => a.py - b.py).forEach((d) => d.draw());
       raf = requestAnimationFrame(loop);
     };
@@ -547,6 +551,9 @@ export default function MapScreen({ mapId, save, onChangeMap, onTalk, onTitle, o
           </div>
         );
       })}
+
+      {/* [추가 김홍경 11/25] 주인공 위치 표시: '나' + 아래 화살표 (위치는 그리기 루프에서 갱신) */}
+      <div ref={playerTagRef} className="player-tag" aria-hidden="true"><span className="player-me">{Text.map.me}</span><span className="player-arrow" /></div>
 
       {bubble && bubbleNpc && (
         <div className="npc-bubble" style={at(bubbleNpc.x, bubbleNpc.y, bubbleNpc.w, 6)}>

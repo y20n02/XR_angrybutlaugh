@@ -43,10 +43,24 @@
 .map-menu-cursor { width: 2.4cqh; color: #e04848; }
 .map-menu p { margin: 1.6cqh 0 0; color: #6b6880; font-size: 1.8cqh; }
 
+/* [추가 김홍경 11/25] 주인공 위치 표시: 하늘색 '나' 이름표 + 아래를 가리키는 픽셀 화살표 (NPC의 노란 표시와 구분) */
+.player-tag {
+  position: absolute; z-index: 4; transform: translate(-50%, -100%); pointer-events: none;
+  display: flex; flex-direction: column; align-items: center; /* [수정 김홍경 11/25] 통통 튀는 애니메이션 제거: 캐릭터가 움직일 때만 따라 움직임 */
+}
+.player-me {
+  display: grid; place-items: center; min-width: 4cqh; height: 3.6cqh; padding: 0 0.8cqh;
+  border: 0.35cqh solid #2a2230; background: #7fd3ff; color: #2a2230; font-size: 2.4cqh; font-weight: 700;
+  box-shadow: 0.35cqh 0.35cqh 0 #2a223099;
+}
+.player-arrow {
+  width: 0; height: 0; margin-top: -0.1cqh;
+  border-left: 1.2cqh solid transparent; border-right: 1.2cqh solid transparent; border-top: 1.4cqh solid #2a2230;
+}
 @keyframes npc-bounce { 50% { transform: translateY(-0.6cqh); } }
 @keyframes npc-blink { 50% { opacity: 0.4; } }
 @keyframes bubble-pop { from { transform: translate(-50%, -80%); opacity: 0; } }
-@media (prefers-reduced-motion: reduce) { .npc-mark, .npc-plate kbd, .npc-bubble { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .npc-mark, .npc-plate kbd, .npc-bubble, .player-tag { animation: none; } }
 
 /* 맵 확대 배경 (MapCloseup) */
 .map-closeup { position: absolute; top: 58%; left: 50%; width: 260%; aspect-ratio: 16 / 9; }
